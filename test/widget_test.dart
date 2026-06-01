@@ -1,30 +1,31 @@
-// This is a basic Flutter widget test.
+// Widget tests for the CIVIC Campus app.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// These tests verify that the splash screen transitions into the login flow
+// after the configured delay.
 
-import 'package:flutter/material.dart';
+import 'package:civic_campus/app.dart';
+import 'package:civic_campus/screens/login_screen.dart';
+import 'package:civic_campus/screens/splash_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:civic_campus/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('SplashScreen navigates to LoginScreen after delay', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CivicCampusApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Splash screen should appear first.
+    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(LoginScreen), findsNothing);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Advance fake time slightly past the configured splash delay.
+    await tester.pump(
+      SplashScreen.duration + const Duration(milliseconds: 100),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Login screen should now be visible.
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.byType(SplashScreen), findsNothing);
   });
 }
