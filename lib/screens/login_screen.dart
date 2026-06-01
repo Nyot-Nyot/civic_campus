@@ -1,10 +1,12 @@
+import 'package:civic_campus/app_messenger.dart';
+import 'package:civic_campus/screens/student_home_screen.dart';
 import 'package:civic_campus/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 // Enable only when actively debugging login UI locally.
 // Keep false for normal development and production builds.
-const bool kEnableDeveloperAutofill = false;
+const bool kEnableDeveloperAutofill = true;
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
@@ -39,11 +41,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _onLoginPressed() {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login berhasil — ini mockup UI dummy saja.'),
-        ),
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('Login berhasil — menuju Student Home.')),
       );
+      Navigator.of(context).pushReplacementNamed(StudentHomeScreen.routeName);
     }
   }
 
@@ -93,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
+                          key: const Key('login_email'),
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
@@ -112,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 18),
                         TextFormField(
+                          key: const Key('login_password'),
                           controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
