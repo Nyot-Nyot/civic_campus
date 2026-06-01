@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'new_report_screen.dart';
+
 class _Report {
   final String title;
   final String location;
@@ -496,9 +498,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 return Expanded(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(34),
-                    onTap: () => setState(() {
-                      _selectedIndex = index;
-                    }),
+                    onTap: () {
+                      if (index == 1) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const NewReportScreen(),
+                          ),
+                        );
+                      } else {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      }
+                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Center(
