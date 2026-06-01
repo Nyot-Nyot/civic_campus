@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/incident.dart';
+import '../data/models/incident.dart';
+import '../data/dummy_data.dart';
 
 class IncidentDetailScreen extends StatelessWidget {
   final Incident incident;
@@ -21,14 +22,6 @@ class _IncidentDetailBody extends StatelessWidget {
   final Incident incident;
 
   const _IncidentDetailBody({required this.incident});
-
-  static const _statusFlow = [
-    'Open',
-    'Assigned',
-    'In Progress',
-    'Resolved',
-    'Closed',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -229,11 +222,11 @@ class _IncidentDetailBody extends StatelessWidget {
 
   Widget _buildTimeline() {
     final currentIndex =
-        _statusFlow.indexOf(incident.status).clamp(0, _statusFlow.length - 1);
+        statusFlow.indexOf(incident.status).clamp(0, statusFlow.length - 1);
 
     return Column(
-      children: List.generate(_statusFlow.length, (index) {
-        final status = _statusFlow[index];
+      children: List.generate(statusFlow.length, (index) {
+        final status = statusFlow[index];
         final isCompleted = index < currentIndex;
         final isCurrent = index == currentIndex;
         final isPending = index > currentIndex;
@@ -256,7 +249,7 @@ class _IncidentDetailBody extends StatelessWidget {
         final statusBgStatus =
             statusBgColors[status] ?? const Color(0xFFF3F4F6);
 
-        final connectorHeight = index < _statusFlow.length - 1 ? 20.0 : 0.0;
+        final connectorHeight = index < statusFlow.length - 1 ? 20.0 : 0.0;
 
         return SizedBox(
           height: 44,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/incident.dart';
+import '../data/dummy_data.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -164,41 +164,41 @@ class _ProfileBodyState extends State<_ProfileBody> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Andi Mahasiswa',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'Student',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D4ED8),
+                  children: [
+                    Text(
+                      currentUser.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'andi.mahasiswa@campus.id',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        currentUser.role,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1D4ED8),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      currentUser.email,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
               ),
             ),
           ],
@@ -296,13 +296,13 @@ class _ProfileBodyState extends State<_ProfileBody> {
           _buildMenuItem(
             icon: Icons.info_outline,
             title: 'Tentang Aplikasi',
-            subtitle: 'v1.0.0',
+            subtitle: 'v$appVersion',
             onTap: () {
               showAboutDialog(
                 context: context,
-                applicationName: 'CIVIC Campus',
-                applicationVersion: '1.0.0',
-                applicationLegalese: '© 2026 CIVIC Campus',
+                applicationName: appName,
+                applicationVersion: appVersion,
+                applicationLegalese: appCopyright,
               );
             },
           ),

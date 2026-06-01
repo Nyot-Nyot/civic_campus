@@ -1,25 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../data/models/incident.dart';
+import '../data/dummy_data.dart';
 import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
-
-class _Report {
-  final String title;
-  final String location;
-  final String status;
-  final String time;
-  final String priority;
-
-  const _Report({
-    required this.title,
-    required this.location,
-    required this.status,
-    required this.time,
-    required this.priority,
-  });
-}
 
 class StudentHomeScreen extends StatefulWidget {
   static const routeName = '/student-home';
@@ -48,31 +34,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     Icons.person,
   ];
 
-  static const _categories = <String>[
-    'Gedung Kuliah',
-    'Asrama',
-    'Toilet',
-    'WiFi',
-  ];
+  static const _categories = homeCategoryNames;
 
-  static const _activeReports = <_Report>[
-    _Report(
-      title: 'Lampu koridor mati',
-      location: 'Gedung A / Lantai 2',
-      status: 'In Progress',
-      time: '2 jam lalu',
-      priority: 'Medium',
-    ),
-    _Report(
-      title: 'AC ruang kuliah tidak dingin',
-      location: 'Gedung F / F101',
-      status: 'Open',
-      time: '4 jam lalu',
-      priority: 'High',
-    ),
-  ];
+  List<Incident> get _activeReports => allIncidents
+      .where((i) => i.status != 'Resolved' && i.status != 'Closed')
+      .toList();
 
   Widget _buildHomeTab(BuildContext context) {
+    final activeReports = _activeReports;
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -230,10 +199,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
-              final item = _activeReports[index];
+              final item = activeReports[index];
               return Padding(
                 padding: EdgeInsets.only(
-                  bottom: index == _activeReports.length - 1 ? 0 : 14,
+                  bottom: index == activeReports.length - 1 ? 0 : 14,
                 ),
                 child: Card(
                   margin: EdgeInsets.zero,
@@ -272,13 +241,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFEFF6FF),
+                                      color: statusBgColors[item.status] ??
+                                          const Color(0xFFEFF6FF),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Text(
                                       item.status,
-                                      style: const TextStyle(
-                                        color: Color(0xFF1D4ED8),
+                                      style: TextStyle(
+                                        color: statusColors[item.status] ??
+                                            const Color(0xFF1D4ED8),
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -286,7 +257,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    item.time,
+                                    item.timeAgo,
                                     style: const TextStyle(
                                       color: Color(0xFF9CA3AF),
                                       fontSize: 12,
@@ -298,15 +269,20 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: const Color(0xFFEEF2FF),
-                          child: Text(
-                            item.priority.isNotEmpty ? item.priority[0] : '?',
-                            style: const TextStyle(
-                              color: Color(0xFF1D4ED8),
-                              fontWeight: FontWeight.bold,
-                            ),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: (categoryColors[item.category] ??
+                                    const Color(0xFF3B82F6))
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            categoryIcons[item.category] ?? Icons.report_problem,
+                            color: categoryColors[item.category] ??
+                                const Color(0xFF3B82F6),
+                            size: 20,
                           ),
                         ),
                       ],
@@ -314,7 +290,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
               );
-            }, childCount: _activeReports.length),
+            }, childCount: activeReports.length),
           ),
         ),
       ],

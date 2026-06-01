@@ -1,122 +1,7 @@
 import 'package:flutter/material.dart';
 
-class _Building {
-  final String name;
-  final List<_Floor> floors;
-  const _Building({required this.name, required this.floors});
-}
-
-class _Floor {
-  final String name;
-  final List<String> areas;
-  const _Floor({required this.name, required this.areas});
-}
-
-class _Category {
-  final String name;
-  final IconData icon;
-  final Color color;
-  const _Category({required this.name, required this.icon, required this.color});
-}
-
-const _buildings = <_Building>[
-  _Building(
-    name: 'Gedung A',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['A101', 'A102', 'A103', 'Koridor', 'Lobi', 'Toilet']),
-      _Floor(name: 'Lantai 2', areas: ['A201', 'A202', 'A203', 'A204', 'Koridor', 'Toilet']),
-      _Floor(name: 'Lantai 3', areas: ['A301', 'A302', 'A303', 'Koridor', 'Toilet']),
-    ],
-  ),
-  _Building(
-    name: 'Gedung B',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['B101', 'B102', 'B103', 'Lab Komputer', 'Koridor', 'Toilet']),
-      _Floor(name: 'Lantai 2', areas: ['B201', 'B202', 'B203', 'B204', 'Koridor', 'Toilet']),
-    ],
-  ),
-  _Building(
-    name: 'Gedung F',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['F101', 'F102', 'F103', 'F104', 'Koridor', 'Lobi', 'Toilet']),
-      _Floor(name: 'Lantai 2', areas: ['F201', 'F202', 'F203', 'Lab Bahasa', 'Koridor', 'Toilet']),
-      _Floor(name: 'Lantai 3', areas: ['F301', 'F302', 'F303', 'Aula', 'Koridor', 'Toilet']),
-    ],
-  ),
-  _Building(
-    name: 'Perpustakaan',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['Ruang Baca', 'Lobi', 'Toilet', 'Area Buku']),
-      _Floor(name: 'Lantai 2', areas: ['Ruang Diskusi', 'Ruang Digital', 'Toilet']),
-    ],
-  ),
-  _Building(
-    name: 'Gedung Serbaguna',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['Aula', 'Kantin', 'Koridor', 'Toilet', 'Mushola']),
-      _Floor(name: 'Lantai 2', areas: ['Ruang Rapat', 'Ruang Organisasi', 'Koridor', 'Toilet']),
-    ],
-  ),
-  _Building(
-    name: 'Asrama Putra',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['Kamar 101-110', 'Ruang Tamu', 'Toilet', 'Dapur Umum']),
-      _Floor(name: 'Lantai 2', areas: ['Kamar 201-210', 'Ruang Belajar', 'Toilet', 'Dapur Umum']),
-    ],
-  ),
-  _Building(
-    name: 'Asrama Putri',
-    floors: [
-      _Floor(name: 'Lantai 1', areas: ['Kamar 101-110', 'Ruang Tamu', 'Toilet', 'Dapur Umum']),
-      _Floor(name: 'Lantai 2', areas: ['Kamar 201-210', 'Ruang Belajar', 'Toilet', 'Dapur Umum']),
-    ],
-  ),
-  _Building(
-    name: 'Lokasi Luar Gedung',
-    floors: [
-      _Floor(
-        name: 'Area Terbuka',
-        areas: ['Taman Kampus', 'Lapangan', 'Parkiran Motor', 'Parkiran Mobil', 'Gazebo', 'Halte', 'Jembatan Penghubung'],
-      ),
-      _Floor(
-        name: 'Fasilitas Umum',
-        areas: ['Kantin Utama', 'Koperasi', 'Pos Satpam', 'Tempat Duduk Luar', 'Papan Informasi'],
-      ),
-    ],
-  ),
-];
-
-class _Suggestion {
-  final String title;
-  final String location;
-  final String category;
-  final String building;
-  final String floor;
-  final String status;
-  final int confirmCount;
-  const _Suggestion({
-    required this.title,
-    required this.location,
-    required this.category,
-    required this.building,
-    required this.floor,
-    required this.status,
-    required this.confirmCount,
-  });
-}
-
-const _categories = <_Category>[
-  _Category(name: 'AC', icon: Icons.ac_unit, color: Color(0xFF3B82F6)),
-  _Category(name: 'Lampu', icon: Icons.lightbulb_outline, color: Color(0xFFFBBF24)),
-  _Category(name: 'Listrik', icon: Icons.bolt, color: Color(0xFFF97316)),
-  _Category(name: 'Proyektor', icon: Icons.videocam, color: Color(0xFF8B5CF6)),
-  _Category(name: 'Pipa Air', icon: Icons.water_drop, color: Color(0xFF06B6D4)),
-  _Category(name: 'Toilet', icon: Icons.wc, color: Color(0xFF10B981)),
-  _Category(name: 'Furnitur', icon: Icons.chair_outlined, color: Color(0xFFEC4899)),
-  _Category(name: 'WiFi', icon: Icons.wifi, color: Color(0xFF6366F1)),
-  _Category(name: 'Kebersihan', icon: Icons.cleaning_services, color: Color(0xFF14B8A6)),
-  _Category(name: 'Struktur', icon: Icons.construction, color: Color(0xFFEF4444)),
-];
+import '../data/models/building.dart';
+import '../data/dummy_data.dart';
 
 class NewReportScreen extends StatefulWidget {
   static const routeName = '/new-report';
@@ -129,7 +14,20 @@ class NewReportScreen extends StatefulWidget {
 
 class _NewReportScreenState extends State<NewReportScreen> {
   int _currentStep = 0;
-  static const _totalSteps = 5;
+  static const _totalSteps = reportTotalSteps;
+
+  @override
+  void initState() {
+    super.initState();
+    assert(
+      reportStepTitles.length == reportTotalSteps,
+      'reportStepTitles.length (${reportStepTitles.length}) != reportTotalSteps ($reportTotalSteps)',
+    );
+    assert(
+      reportStepSubtitles.length == reportTotalSteps,
+      'reportStepSubtitles.length (${reportStepSubtitles.length}) != reportTotalSteps ($reportTotalSteps)',
+    );
+  }
 
   String? _selectedBuilding;
   String? _selectedFloor;
@@ -147,16 +45,16 @@ class _NewReportScreenState extends State<NewReportScreen> {
   bool _duplicateChecked = false;
   String? _duplicateAction;
 
-  _Floor? get _currentFloor {
+  Floor? get _currentFloor {
     if (_selectedBuilding == null || _selectedFloor == null) return null;
-    final building = _buildings.firstWhere((b) => b.name == _selectedBuilding);
+    final building = allBuildings.firstWhere((b) => b.name == _selectedBuilding);
     return building.floors.firstWhere((f) => f.name == _selectedFloor);
   }
 
-  List<_Building> get _filteredBuildings {
+  List<Building> get _filteredBuildings {
     final query = _locationSearchController.text.trim().toLowerCase();
-    if (query.isEmpty) return _buildings;
-    return _buildings.where((b) {
+    if (query.isEmpty) return allBuildings;
+    return allBuildings.where((b) {
       if (b.name.toLowerCase().contains(query)) return true;
       for (final f in b.floors) {
         if (f.name.toLowerCase().contains(query)) return true;
@@ -188,25 +86,11 @@ class _NewReportScreenState extends State<NewReportScreen> {
   }
 
   String get _stepTitle {
-    const titles = [
-      'Pilih Lokasi',
-      'Pilih Kategori',
-      'Unggah Foto',
-      'Deskripsi',
-      'Tinjau & Kirim',
-    ];
-    return titles[_currentStep];
+    return reportStepTitles[_currentStep];
   }
 
   String get _stepSubtitle {
-    const subtitles = [
-      'Di mana lokasi masalah?',
-      'Apa jenis masalahnya?',
-      'Ambil atau unggah foto bukti',
-      'Tambahkan deskripsi (opsional)',
-      'Periksa dan kirim laporan',
-    ];
-    return subtitles[_currentStep];
+    return reportStepSubtitles[_currentStep];
   }
 
   @override
@@ -446,7 +330,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
           _buildChipSection(
             title: 'Pilih Lantai',
             hint: _selectedBuilding == 'Lokasi Luar Gedung' ? 'Pilih kategori area luar' : null,
-            chips: _buildings
+            chips: allBuildings
                 .firstWhere((b) => b.name == _selectedBuilding)
                 .floors
                 .map((f) => f.name)
@@ -604,9 +488,9 @@ class _NewReportScreenState extends State<NewReportScreen> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: _categories.length,
+      itemCount: allReportCategories.length,
       itemBuilder: (context, index) {
-        final category = _categories[index];
+        final category = allReportCategories[index];
         final isSelected = _selectedCategory == category.name;
         return Material(
           color: Colors.transparent,
@@ -1061,46 +945,24 @@ class _NewReportScreenState extends State<NewReportScreen> {
     );
   }
 
-  // Scoring: kategori adalah sinyal terkuat (60), lokasi membantu disambiguasi (20+20).
-  // Total maksimum = 100.
-  static const _scoreCategoryMatch = 60;
-  static const _scoreBuildingMatch = 20;
-  static const _scoreFloorMatch = 20;
-  static const _scoreStrongMatchThreshold = 70;
+  // Scoring constants in dummy_data.dart:
+  // scoreCategoryMatch=60, scoreBuildingMatch=20, scoreFloorMatch=20
+  // scoreStrongMatchThreshold=70
 
   int _computeMatchScore(String category, String? building, String? floor) {
     int score = 0;
-    if (_selectedCategory == category) score += _scoreCategoryMatch;
+    if (_selectedCategory == category) score += scoreCategoryMatch;
     if (_selectedBuilding != null && _selectedBuilding == building) {
-      score += _scoreBuildingMatch;
+      score += scoreBuildingMatch;
     }
     if (_selectedFloor != null && _selectedFloor == floor) {
-      score += _scoreFloorMatch;
+      score += scoreFloorMatch;
     }
     return score;
   }
 
   Widget _buildDuplicateSuggestion() {
-    final suggestions = [
-      _Suggestion(
-        title: 'AC Lantai 2 tidak dingin',
-        location: 'Gedung F / Lantai 2',
-        category: 'AC',
-        building: 'Gedung F',
-        floor: 'Lantai 2',
-        status: 'In Progress',
-        confirmCount: 3,
-      ),
-      _Suggestion(
-        title: 'AC rusak di F101',
-        location: 'Gedung F / F101',
-        category: 'AC',
-        building: 'Gedung F',
-        floor: 'Lantai 1',
-        status: 'Open',
-        confirmCount: 1,
-      ),
-    ];
+    final suggestions = duplicateSuggestions;
 
     final scored = suggestions.map((s) {
       final score = _computeMatchScore(s.category, s.building, s.floor);
@@ -1139,7 +1001,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
         ...scored.map((item) {
           final s = item.suggestion;
           final score = item.score;
-          final isStrong = score >= _scoreStrongMatchThreshold;
+          final isStrong = score >= scoreStrongMatchThreshold;
           return Padding(
             padding: EdgeInsets.only(
                 bottom: s != scored.last.suggestion ? 10 : 0),

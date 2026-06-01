@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/incident.dart';
+import '../data/models/incident.dart';
+import '../data/dummy_data.dart';
 import 'incident_detail_screen.dart';
 
 class MyIncidentsScreen extends StatelessWidget {
@@ -21,7 +22,7 @@ class _MyIncidentsBody extends StatefulWidget {
 
 class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   int _selectedFilter = 0;
-  static const _filters = ['Semua', 'Aktif', 'Selesai'];
+  static const _filters = reportFilters;
 
   List<Incident> get _filtered {
     switch (_selectedFilter) {
