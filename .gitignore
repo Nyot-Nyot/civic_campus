@@ -1,0 +1,16 @@
+# Node / React / Flutter / general
+.DS_Store
+*.log
+*.tmp
+.idea/
+.vscode/
+*.iml
+/build
+/.dart_tool
+/.packages
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/android/.gradle
+*/.flutter-plugins
+*/.flutter-plugins-dependencies
+**/pubspec.lock
