@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/notification.dart';
-import '../data/dummy_data.dart';
+import '../data/repositories/incident_repository.dart';
+import '../data/repositories/notification_repository.dart';
+import 'incident_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -11,17 +13,33 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  final _notificationRepo = NotificationRepository();
+  final _incidentRepo = IncidentRepository();
   late List<NotificationItem> _notifications;
 
   @override
   void initState() {
     super.initState();
-    _notifications = allNotifications
-        .map((n) => NotificationItem.from(n))
-        .toList();
+    _notificationRepo.getAll().then((items) {
+      if (!mounted) return;
+      setState(() => _notifications = items);
+    });
+    _notifications = [];
   }
 
   int get _unreadCount => _notifications.where((n) => n.isUnread).length;
+
+  Future<void> _onNotificationTap(NotificationItem item) async {
+    if (item.incidentId == null) return;
+    final incident = await _incidentRepo.getById(item.incidentId!);
+    if (!mounted || incident == null) return;
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => IncidentDetailScreen(incident: incident),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +72,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             if (_unreadCount > 0)
               TextButton(
                 onPressed: () {
+                  _notificationRepo.markAllRead();
                   setState(() {
                     for (final n in _notifications) {
                       n.isUnread = false;
@@ -166,7 +185,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               color: Colors.transparent,
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(20),
-                                onTap: () {},
+                                onTap: () => _onNotificationTap(item),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Row(
@@ -204,12 +223,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                     height: 8,
                                                     decoration:
                                                         const BoxDecoration(
-                                                          color: Color(
-                                                            0xFF1D4ED8,
-                                                          ),
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
+                                                      color: Color(0xFF1D4ED8),
+                                                      shape: BoxShape.circle,
+                                                    ),
                                                   ),
                                                 if (item.isUnread)
                                                   const SizedBox(width: 8),
@@ -222,11 +238,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                                           FontWeight.w600,
                                                       color: item.isUnread
                                                           ? const Color(
-                                                              0xFF111827,
-                                                            )
+                                                              0xFF111827)
                                                           : const Color(
-                                                              0xFF6B7280,
-                                                            ),
+                                                              0xFF6B7280),
                                                     ),
                                                   ),
                                                 ),

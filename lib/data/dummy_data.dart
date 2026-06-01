@@ -160,6 +160,7 @@ final allNotifications = <NotificationItem>[
     isUnread: true,
     icon: Icons.engineering_outlined,
     iconColor: const Color(0xFFC2410C),
+    incidentId: 'INC-001',
   ),
   NotificationItem(
     id: 'N-002',
@@ -169,6 +170,7 @@ final allNotifications = <NotificationItem>[
     isUnread: true,
     icon: Icons.check_circle_outline,
     iconColor: const Color(0xFF047857),
+    incidentId: 'INC-004',
   ),
   NotificationItem(
     id: 'N-003',
@@ -187,6 +189,7 @@ final allNotifications = <NotificationItem>[
     isUnread: false,
     icon: Icons.swap_horiz,
     iconColor: const Color(0xFF3B82F6),
+    incidentId: 'INC-002',
   ),
   NotificationItem(
     id: 'N-005',
@@ -196,6 +199,7 @@ final allNotifications = <NotificationItem>[
     isUnread: false,
     icon: Icons.people_outline,
     iconColor: const Color(0xFF8B5CF6),
+    incidentId: 'INC-006',
   ),
   NotificationItem(
     id: 'N-006',
@@ -205,6 +209,7 @@ final allNotifications = <NotificationItem>[
     isUnread: false,
     icon: Icons.refresh,
     iconColor: const Color(0xFF10B981),
+    incidentId: 'INC-003',
   ),
 ];
 

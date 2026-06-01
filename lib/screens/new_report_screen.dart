@@ -6,7 +6,9 @@ import '../data/dummy_data.dart';
 class NewReportScreen extends StatefulWidget {
   static const routeName = '/new-report';
 
-  const NewReportScreen({super.key});
+  final String? initialCategory;
+
+  const NewReportScreen({super.key, this.initialCategory});
 
   @override
   State<NewReportScreen> createState() => _NewReportScreenState();
@@ -19,6 +21,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCategory = widget.initialCategory;
     assert(
       reportStepTitles.length == reportTotalSteps,
       'reportStepTitles.length (${reportStepTitles.length}) != reportTotalSteps ($reportTotalSteps)',

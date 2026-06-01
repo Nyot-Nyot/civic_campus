@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
+import '../data/repositories/incident_repository.dart';
+import '../data/repositories/notification_repository.dart';
+import 'incident_detail_screen.dart';
 import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
 import 'notification_screen.dart';
@@ -18,7 +21,12 @@ class StudentHomeScreen extends StatefulWidget {
 
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
   int _selectedIndex = 0;
-  int _unreadNotificationCount = 3;
+  int _unreadNotificationCount = 0;
+  List<Incident> _activeIncidents = [];
+  bool _isLoading = true;
+
+  final _incidentRepo = IncidentRepository();
+  final _notificationRepo = NotificationRepository();
 
   static const _bottomNavigationIcons = <IconData>[
     Icons.home_outlined,
@@ -36,12 +44,41 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   static const _categories = homeCategoryNames;
 
-  List<Incident> get _activeReports => allIncidents
-      .where((i) => i.status != 'Resolved' && i.status != 'Closed')
-      .toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final active = await _incidentRepo.getActive();
+      final unread = await _notificationRepo.getUnreadCount();
+      if (!mounted) return;
+      setState(() {
+        _activeIncidents = active;
+        _unreadNotificationCount = unread;
+      });
+    } catch (e) {
+      debugPrint('_loadData error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onCategoryChipTap(BuildContext context, String category) {
+    String? initialCategory;
+    if (category == 'Toilet' || category == 'WiFi') {
+      initialCategory = category;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NewReportScreen(initialCategory: initialCategory),
+      ),
+    );
+  }
 
   Widget _buildHomeTab(BuildContext context) {
-    final activeReports = _activeReports;
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -176,8 +213,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   itemCount: _categories.length,
                   separatorBuilder: (context, _) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
-                    return Chip(
+                    return ActionChip(
                       label: Text(_categories[index]),
+                      onPressed: () => _onCategoryChipTap(context, _categories[index]),
                       backgroundColor: const Color(0xFFF3F4F6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -197,101 +235,147 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final item = activeReports[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == activeReports.length - 1 ? 0 : 14,
-                ),
-                child: Card(
-                  margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+          sliver: _isLoading
+              ? const SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                )
+              : _activeIncidents.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: Text(
+                            'Tidak ada laporan aktif.',
+                            style: TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final item = _activeIncidents[index];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index == _activeIncidents.length - 1 ? 0 : 14,
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        IncidentDetailScreen(incident: item),
+                                  ),
+                                );
+                              },
+                              child: Card(
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                item.location,
-                                style: const TextStyle(
-                                  color: Color(0xFF6B7280),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: statusBgColors[item.status] ??
-                                          const Color(0xFFEFF6FF),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Text(
-                                      item.status,
-                                      style: TextStyle(
-                                        color: statusColors[item.status] ??
-                                            const Color(0xFF1D4ED8),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(18),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.title,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              item.location,
+                                              style: const TextStyle(
+                                                color: Color(0xFF6B7280),
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 6,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: statusBgColors[
+                                                            item.status] ??
+                                                        const Color(0xFFEFF6FF),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            14),
+                                                  ),
+                                                  child: Text(
+                                                    item.status,
+                                                    style: TextStyle(
+                                                      color: statusColors[
+                                                              item.status] ??
+                                                          const Color(0xFF1D4ED8),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  item.timeAgo,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF9CA3AF),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: (categoryColors[
+                                                      item.category] ??
+                                                  const Color(0xFF3B82F6))
+                                              .withValues(alpha: 0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          categoryIcons[item.category] ??
+                                              Icons.report_problem,
+                                          color: categoryColors[
+                                                  item.category] ??
+                                              const Color(0xFF3B82F6),
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    item.timeAgo,
-                                    style: const TextStyle(
-                                      color: Color(0xFF9CA3AF),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: (categoryColors[item.category] ??
-                                    const Color(0xFF3B82F6))
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            categoryIcons[item.category] ?? Icons.report_problem,
-                            color: categoryColors[item.category] ??
-                                const Color(0xFF3B82F6),
-                            size: 20,
-                          ),
-                        ),
-                      ],
+                        );
+                      }, childCount: _activeIncidents.length),
                     ),
-                  ),
-                ),
-              );
-            }, childCount: activeReports.length),
-          ),
         ),
       ],
     );
@@ -300,9 +384,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
       case 1:
-        // Tab 1 (+ icon) pushes NewReportScreen via Navigator —
-        // _selectedIndex is never set to 1. This case exists as a
-        // safety net in case the flow changes.
         return const SizedBox.shrink();
       case 2:
         return const MyIncidentsScreen();

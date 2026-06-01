@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/dummy_data.dart';
+import '../data/repositories/incident_repository.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -21,6 +22,33 @@ class _ProfileBody extends StatefulWidget {
 
 class _ProfileBodyState extends State<_ProfileBody> {
   bool _notificationsEnabled = true;
+  final _incidentRepo = IncidentRepository();
+
+  int _totalIncidents = 0;
+  int _activeIncidents = 0;
+  int _completedIncidents = 0;
+  bool _isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final results = await Future.wait([
+      _incidentRepo.getAll(),
+      _incidentRepo.getActive(),
+      _incidentRepo.getCompleted(),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _totalIncidents = (results[0] as List).length;
+      _activeIncidents = (results[1] as List).length;
+      _completedIncidents = (results[2] as List).length;
+      _isLoadingStats = false;
+    });
+  }
 
   void _confirmLogout(BuildContext context) {
     showModalBottomSheet(
@@ -142,6 +170,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   Widget _buildProfileHeader() {
+    final user = currentUser;
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -166,7 +195,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currentUser.name,
+                      user.name,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -182,7 +211,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        currentUser.role,
+                        user.role,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -192,7 +221,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      currentUser.email,
+                      user.email,
                       style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF6B7280),
@@ -208,27 +237,44 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   Widget _buildStatsRow() {
-    final total = allIncidents.length;
-    final aktif = allIncidents
-        .where((i) => i.status != 'Resolved' && i.status != 'Closed')
-        .length;
-    final selesai = total - aktif;
+    if (_isLoadingStats) {
+      return Row(
+        children: List.generate(3, (_) => Expanded(
+          child: Card(
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+              child: Column(
+                children: const [
+                  SizedBox(
+                    width: 24, height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        )),
+      );
+    }
 
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
-              'Total', total.toString(), Icons.description_outlined),
+              'Total', _totalIncidents.toString(), Icons.description_outlined),
         ),
         const SizedBox(width: 12),
         Expanded(
           child:
-              _buildStatCard('Aktif', aktif.toString(), Icons.trending_up),
+              _buildStatCard('Aktif', _activeIncidents.toString(), Icons.trending_up),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-              'Selesai', selesai.toString(), Icons.check_circle_outline),
+              'Selesai', _completedIncidents.toString(), Icons.check_circle_outline),
         ),
       ],
     );

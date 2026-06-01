@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
+import '../data/repositories/incident_repository.dart';
 import 'incident_detail_screen.dart';
 
 class MyIncidentsScreen extends StatelessWidget {
@@ -23,19 +24,39 @@ class _MyIncidentsBody extends StatefulWidget {
 class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   int _selectedFilter = 0;
   static const _filters = reportFilters;
+  List<Incident> _allIncidents = [];
+  bool _isLoading = true;
+
+  final _incidentRepo = IncidentRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final incidents = await _incidentRepo.getAll();
+    if (!mounted) return;
+    setState(() {
+      _allIncidents = incidents;
+      _isLoading = false;
+    });
+  }
 
   List<Incident> get _filtered {
+    if (_isLoading) return [];
     switch (_selectedFilter) {
       case 1:
-        return allIncidents
+        return _allIncidents
             .where((i) => !_isClosedOrResolved(i.status))
             .toList();
       case 2:
-        return allIncidents
+        return _allIncidents
             .where((i) => _isClosedOrResolved(i.status))
             .toList();
       default:
-        return allIncidents;
+        return _allIncidents;
     }
   }
 
@@ -119,33 +140,35 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
         ),
         const SizedBox(height: 20),
         Expanded(
-          child: filtered.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.inbox_outlined,
-                          size: 56, color: Color(0xFFD1D5DB)),
-                      SizedBox(height: 16),
-                      Text(
-                        'Belum ada laporan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w500,
-                        ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : filtered.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox_outlined,
+                              size: 56, color: Color(0xFFD1D5DB)),
+                          SizedBox(height: 16),
+                          Text(
+                            'Belum ada laporan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF9CA3AF),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    return _buildIncidentCard(context, filtered[index]);
-                  },
-                ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        return _buildIncidentCard(context, filtered[index]);
+                      },
+                    ),
         ),
       ],
     );

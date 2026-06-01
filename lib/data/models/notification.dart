@@ -8,6 +8,7 @@ class NotificationItem {
   bool isUnread;
   final IconData icon;
   final Color iconColor;
+  final String? incidentId;
 
   NotificationItem({
     required this.id,
@@ -17,6 +18,7 @@ class NotificationItem {
     this.isUnread = true,
     required this.icon,
     required this.iconColor,
+    this.incidentId,
   });
 
   NotificationItem.from(NotificationItem other)
@@ -26,5 +28,6 @@ class NotificationItem {
         timeAgo = other.timeAgo,
         isUnread = other.isUnread,
         icon = other.icon,
-        iconColor = other.iconColor;
+        iconColor = other.iconColor,
+        incidentId = other.incidentId;
 }
