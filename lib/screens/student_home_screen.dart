@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
 
 class _Report {
@@ -340,75 +341,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
         );
       case 2:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Insiden Saya',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Lihat ringkasan insiden yang telah Anda laporkan sebelumnya.',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  itemCount: _activeReports.length,
-                  separatorBuilder: (context, _) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    final item = _activeReports[index];
-                    return Card(
-                      margin: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item.location,
-                              style: const TextStyle(
-                                color: Color(0xFF6B7280),
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              item.status,
-                              style: const TextStyle(
-                                color: Color(0xFF1D4ED8),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
+        return const MyIncidentsScreen();
       case 3:
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
