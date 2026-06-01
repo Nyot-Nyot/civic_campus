@@ -1,10 +1,6 @@
-// Widget tests for the CIVIC Campus app.
-//
-// These tests verify that the splash screen transitions into the login flow
-// after the configured delay.
-
 import 'package:civic_campus/app.dart';
 import 'package:civic_campus/screens/login_screen.dart';
+import 'package:civic_campus/screens/new_report_screen.dart';
 import 'package:civic_campus/screens/splash_screen.dart';
 import 'package:civic_campus/screens/student_home_screen.dart';
 import 'package:flutter/material.dart';
@@ -16,17 +12,14 @@ void main() {
   ) async {
     await tester.pumpWidget(const CivicCampusApp());
 
-    // Splash screen should appear first.
     expect(find.byType(SplashScreen), findsOneWidget);
     expect(find.byType(LoginScreen), findsNothing);
 
-    // Advance fake time slightly past the configured splash delay.
     await tester.pump(
       SplashScreen.duration + const Duration(milliseconds: 100),
     );
     await tester.pumpAndSettle();
 
-    // Login screen should now be visible.
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(SplashScreen), findsNothing);
   });
@@ -112,5 +105,67 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Email wajib diisi'), findsOneWidget);
     expect(find.text('Kata sandi wajib diisi'), findsOneWidget);
+  });
+
+  testWidgets('StudentHomeScreen CTA opens NewReportScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudentHomeScreen()),
+    );
+
+    expect(find.byType(StudentHomeScreen), findsOneWidget);
+    expect(find.byType(NewReportScreen), findsNothing);
+
+    final cta = find.text('Laporkan Masalah');
+    expect(cta, findsOneWidget);
+
+    await tester.tap(cta);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NewReportScreen), findsOneWidget);
+    expect(find.text('Pilih Lokasi'), findsOneWidget);
+  });
+
+  testWidgets('Bottom nav plus button opens NewReportScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudentHomeScreen()),
+    );
+
+    expect(find.byType(NewReportScreen), findsNothing);
+
+    // Tap the "+" bottom nav item (index 1).
+    final plusButton = find.byIcon(Icons.add_circle_outline);
+    expect(plusButton, findsOneWidget);
+
+    await tester.tap(plusButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NewReportScreen), findsOneWidget);
+  });
+
+  testWidgets('Back from NewReportScreen returns to StudentHomeScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: StudentHomeScreen()),
+    );
+
+    await tester.tap(find.text('Laporkan Masalah'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NewReportScreen), findsOneWidget);
+
+    // Tap the back arrow in the NewReportScreen header.
+    final backButton = find.byIcon(Icons.arrow_back);
+    expect(backButton, findsOneWidget);
+
+    await tester.tap(backButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StudentHomeScreen), findsOneWidget);
+    expect(find.byType(NewReportScreen), findsNothing);
   });
 }

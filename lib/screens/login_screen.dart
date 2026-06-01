@@ -22,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -39,12 +40,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _onLoginPressed() {
-    if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _onLoginPressed() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final navigator = Navigator.of(context);
+    setState(() => _isLoading = true);
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
       rootScaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(content: Text('Login berhasil — menuju Student Home.')),
+        const SnackBar(
+          content: Text('Login berhasil — menuju Student Home.'),
+        ),
       );
-      Navigator.of(context).pushReplacementNamed(StudentHomeScreen.routeName);
+      navigator.pushReplacementNamed(StudentHomeScreen.routeName);
+    } catch (e) {
+      if (!mounted) return;
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Login gagal: ${e.toString()}'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -96,6 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           key: const Key('login_email'),
                           controller: _emailController,
+                          enabled: !_isLoading,
                           keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
                             labelText: 'Email kampus',
@@ -116,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           key: const Key('login_password'),
                           controller: _passwordController,
+                          enabled: !_isLoading,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             labelText: 'Kata sandi',
@@ -161,8 +182,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: _onLoginPressed,
-                          child: const Text('Masuk'),
+                          onPressed: _isLoading ? null : _onLoginPressed,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Masuk'),
                         ),
                       ],
                     ),

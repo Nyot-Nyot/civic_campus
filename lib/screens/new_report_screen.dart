@@ -86,6 +86,25 @@ const _buildings = <_Building>[
   ),
 ];
 
+class _Suggestion {
+  final String title;
+  final String location;
+  final String category;
+  final String building;
+  final String floor;
+  final String status;
+  final int confirmCount;
+  const _Suggestion({
+    required this.title,
+    required this.location,
+    required this.category,
+    required this.building,
+    required this.floor,
+    required this.status,
+    required this.confirmCount,
+  });
+}
+
 const _categories = <_Category>[
   _Category(name: 'AC', icon: Icons.ac_unit, color: Color(0xFF3B82F6)),
   _Category(name: 'Lampu', icon: Icons.lightbulb_outline, color: Color(0xFFFBBF24)),
@@ -121,6 +140,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
   String? _selectedCategory;
 
   final List<String> _photos = [];
+  bool _isSubmitting = false;
 
   final _descriptionController = TextEditingController();
 
@@ -215,18 +235,35 @@ class _NewReportScreenState extends State<NewReportScreen> {
     });
   }
 
-  void _handleSubmit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _duplicateAction == 'confirm'
-              ? 'Konfirmasi laporan berhasil dikirim!'
-              : 'Laporan baru berhasil dibuat!',
+  void _handleSubmit() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _isSubmitting = true);
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            _duplicateAction == 'confirm'
+                ? 'Konfirmasi laporan berhasil dikirim!'
+                : 'Laporan baru berhasil dibuat!',
+          ),
+          backgroundColor: const Color(0xFF10B981),
         ),
-        backgroundColor: const Color(0xFF10B981),
-      ),
-    );
-    Navigator.of(context).pop();
+      );
+      navigator.pop();
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -668,22 +705,98 @@ class _NewReportScreenState extends State<NewReportScreen> {
     );
   }
 
+  void _showPhotoPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Tambah Foto',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.camera_alt_outlined,
+                        color: Color(0xFF1D4ED8)),
+                  ),
+                  title: const Text('Kamera'),
+                  subtitle: const Text('Ambil foto langsung'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    setState(() {
+                      _photos.add('mock_photo_${_photos.length + 1}');
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.photo_library_outlined,
+                        color: Color(0xFF374151)),
+                  ),
+                  title: const Text('Galeri'),
+                  subtitle: const Text('Pilih dari galeri'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    setState(() {
+                      _photos.add('mock_photo_${_photos.length + 1}');
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAddPhotoButton() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          setState(() {
-            _photos.add('mock_photo_${_photos.length + 1}');
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Foto berhasil ditambahkan (mock)'),
-              duration: Duration(seconds: 1),
-            ),
-          );
-        },
+        onTap: () => _showPhotoPicker(context),
         child: Container(
           width: 120,
           decoration: BoxDecoration(
@@ -721,16 +834,30 @@ class _NewReportScreenState extends State<NewReportScreen> {
         Container(
           width: 120,
           decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
+            color: const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(20),
-            image: const DecorationImage(
-              image: AssetImage('assets/placeholder_photo.png'),
-              fit: BoxFit.cover,
-              opacity: 0.0,
-            ),
           ),
-          child: const Center(
-            child: Icon(Icons.image, size: 40, color: Color(0xFF9CA3AF)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.image, size: 36, color: const Color(0xFF9CA3AF)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Foto ${index + 1}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Positioned(
@@ -745,25 +872,6 @@ class _NewReportScreenState extends State<NewReportScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.close, size: 14, color: Colors.white),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 6,
-          left: 6,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'Foto ${index + 1}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ),
         ),
@@ -953,101 +1061,213 @@ class _NewReportScreenState extends State<NewReportScreen> {
     );
   }
 
+  // Scoring: kategori adalah sinyal terkuat (60), lokasi membantu disambiguasi (20+20).
+  // Total maksimum = 100.
+  static const _scoreCategoryMatch = 60;
+  static const _scoreBuildingMatch = 20;
+  static const _scoreFloorMatch = 20;
+  static const _scoreStrongMatchThreshold = 70;
+
+  int _computeMatchScore(String category, String? building, String? floor) {
+    int score = 0;
+    if (_selectedCategory == category) score += _scoreCategoryMatch;
+    if (_selectedBuilding != null && _selectedBuilding == building) {
+      score += _scoreBuildingMatch;
+    }
+    if (_selectedFloor != null && _selectedFloor == floor) {
+      score += _scoreFloorMatch;
+    }
+    return score;
+  }
+
   Widget _buildDuplicateSuggestion() {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final suggestions = [
+      _Suggestion(
+        title: 'AC Lantai 2 tidak dingin',
+        location: 'Gedung F / Lantai 2',
+        category: 'AC',
+        building: 'Gedung F',
+        floor: 'Lantai 2',
+        status: 'In Progress',
+        confirmCount: 3,
+      ),
+      _Suggestion(
+        title: 'AC rusak di F101',
+        location: 'Gedung F / F101',
+        category: 'AC',
+        building: 'Gedung F',
+        floor: 'Lantai 1',
+        status: 'Open',
+        confirmCount: 1,
+      ),
+    ];
+
+    final scored = suggestions.map((s) {
+      final score = _computeMatchScore(s.category, s.building, s.floor);
+      return (suggestion: s, score: score);
+    }).toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF3E0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.warning_amber_rounded,
-                      color: Color(0xFFF97316), size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Kami menemukan masalah serupa',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF3E0),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFF97316), size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Kami menemukan masalah serupa',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        ...scored.map((item) {
+          final s = item.suggestion;
+          final score = item.score;
+          final isStrong = score >= _scoreStrongMatchThreshold;
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: s != scored.last.suggestion ? 10 : 0),
+            child: Container(
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isStrong
+                      ? const Color(0xFFF97316)
+                      : const Color(0xFFE5E7EB),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'AC Lantai 2 tidak dingin',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 12, color: Color(0xFF9CA3AF)),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Gedung F / Lantai 2',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      Expanded(
+                        child: Text(
+                          s.title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFEDD5),
+                          color: isStrong
+                              ? const Color(0xFFFFEDD5)
+                              : const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
-                          'In Progress',
+                        child: Text(
+                          isStrong ? 'Sangat Mirip' : 'Mirip',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFFC2410C),
+                            color: isStrong
+                                ? const Color(0xFFC2410C)
+                                : const Color(0xFF6B7280),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.people, size: 12, color: Color(0xFF9CA3AF)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Dikonfirmasi 3 mahasiswa',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5E7EB),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.image_outlined,
+                            size: 18, color: Color(0xFF9CA3AF)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on,
+                                    size: 12, color: Color(0xFF9CA3AF)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  s.location,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF6B7280)),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: s.status == 'In Progress'
+                                        ? const Color(0xFFFFEDD5)
+                                        : const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    s.status,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: s.status == 'In Progress'
+                                          ? const Color(0xFFC2410C)
+                                          : const Color(0xFF1D4ED8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.people,
+                                    size: 12, color: Color(0xFF9CA3AF)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Dikonfirmasi ${s.confirmCount} mahasiswa',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF9CA3AF)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          );
+        }),
+      ],
     );
   }
 
@@ -1185,9 +1405,11 @@ class _NewReportScreenState extends State<NewReportScreen> {
           Expanded(
             flex: _currentStep == 0 ? 1 : 2,
             child: ElevatedButton(
-              onPressed: _currentStep == _totalSteps - 1
-                  ? (_canProceed ? _handleSubmit : null)
-                  : (_canProceed ? _nextStep : null),
+              onPressed: _isSubmitting
+                  ? null
+                  : _currentStep == _totalSteps - 1
+                      ? (_canProceed ? _handleSubmit : null)
+                      : (_canProceed ? _nextStep : null),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(
@@ -1197,9 +1419,20 @@ class _NewReportScreenState extends State<NewReportScreen> {
                     ? const Color(0xFF111827)
                     : const Color(0xFFD1D5DB),
               ),
-              child: Text(
-                _currentStep == _totalSteps - 1 ? 'Kirim Laporan' : 'Lanjut',
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      _currentStep == _totalSteps - 1
+                          ? 'Kirim Laporan'
+                          : 'Lanjut',
+                    ),
             ),
           ),
         ],

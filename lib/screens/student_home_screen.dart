@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 
 class _Report {
   final String title;
@@ -30,6 +32,7 @@ class StudentHomeScreen extends StatefulWidget {
 
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
   int _selectedIndex = 0;
+  int _unreadNotificationCount = 3;
 
   static const _bottomNavigationIcons = <IconData>[
     Icons.home_outlined,
@@ -102,10 +105,44 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ],
                     ),
                   ),
-                  const CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Color(0xFF111827),
-                    child: Icon(Icons.person, color: Colors.white, size: 28),
+                  Stack(
+                    children: [
+                      IconButton(
+                        tooltip: 'Notifikasi',
+                        icon: const Icon(Icons.notifications_outlined,
+                            color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF111827),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          minimumSize: const Size(52, 52),
+                        ),
+                        onPressed: () async {
+                          final unread = await Navigator.of(context).push<int>(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationScreen(),
+                            ),
+                          );
+                          if (!mounted) return;
+                          setState(() => _unreadNotificationCount = unread ?? 0);
+                        },
+                      ),
+                      if (_unreadNotificationCount > 0)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -145,11 +182,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                           ),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Aksi laporkan masalah belum diimplementasikan.',
-                              ),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const NewReportScreen(),
                             ),
                           );
                         },
@@ -289,112 +324,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
       case 1:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Laporkan Masalah Baru',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Buat laporan baru dengan foto dan lokasi. Fitur ini masih dalam mockup.',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Card(
-                margin: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Form laporan sementara',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Isi judul, lokasi, dan unggah foto ketika fitur lengkap siap.',
-                        style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        // Tab 1 (+ icon) pushes NewReportScreen via Navigator —
+        // _selectedIndex is never set to 1. This case exists as a
+        // safety net in case the flow changes.
+        return const SizedBox.shrink();
       case 2:
         return const MyIncidentsScreen();
       case 3:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Profil',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Kelola detail akun dan lihat informasi peran Anda di CIVIC Campus.',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Card(
-                margin: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Mahasiswa Aktif',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Nama: Andi Mahasiswa\nPeran: Student\nEmail: mahasiswa@campus.id',
-                        style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return const ProfileScreen();
       default:
         return _buildHomeTab(context);
     }
