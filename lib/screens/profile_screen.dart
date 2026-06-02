@@ -5,16 +5,20 @@ import '../data/repositories/incident_repository.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final String? staffName;
+
+  const ProfileScreen({super.key, this.staffName});
 
   @override
   Widget build(BuildContext context) {
-    return const _ProfileBody();
+    return _ProfileBody(staffName: staffName);
   }
 }
 
 class _ProfileBody extends StatefulWidget {
-  const _ProfileBody();
+  final String? staffName;
+
+  const _ProfileBody({this.staffName});
 
   @override
   State<_ProfileBody> createState() => _ProfileBodyState();
@@ -27,27 +31,41 @@ class _ProfileBodyState extends State<_ProfileBody> {
   int _totalIncidents = 0;
   int _activeIncidents = 0;
   int _completedIncidents = 0;
+  int _inProgressTasks = 0;
   bool _isLoadingStats = true;
+  bool _isStaff = false;
 
   @override
   void initState() {
     super.initState();
+    _isStaff = widget.staffName != null;
     _loadStats();
   }
 
   Future<void> _loadStats() async {
-    final results = await Future.wait([
-      _incidentRepo.getAll(),
-      _incidentRepo.getActive(),
-      _incidentRepo.getCompleted(),
-    ]);
-    if (!mounted) return;
-    setState(() {
-      _totalIncidents = (results[0] as List).length;
-      _activeIncidents = (results[1] as List).length;
-      _completedIncidents = (results[2] as List).length;
-      _isLoadingStats = false;
-    });
+    if (_isStaff) {
+      final tasks = await _incidentRepo.getAssignedTo(widget.staffName!);
+      if (!mounted) return;
+      setState(() {
+        _totalIncidents = tasks.length;
+        _inProgressTasks = tasks.where((t) => t.status == 'In Progress').length;
+        _completedIncidents = tasks.where((t) => t.status == 'Resolved' || t.status == 'Closed').length;
+        _isLoadingStats = false;
+      });
+    } else {
+      final results = await Future.wait([
+        _incidentRepo.getAll(),
+        _incidentRepo.getActive(),
+        _incidentRepo.getCompleted(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _totalIncidents = (results[0] as List).length;
+        _activeIncidents = (results[1] as List).length;
+        _completedIncidents = (results[2] as List).length;
+        _isLoadingStats = false;
+      });
+    }
   }
 
   void _confirmLogout(BuildContext context) {
@@ -170,7 +188,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   Widget _buildProfileHeader() {
-    final user = currentUser;
+    final user = _isStaff ? staffUser : currentUser;
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -257,6 +275,27 @@ class _ProfileBodyState extends State<_ProfileBody> {
             ),
           ),
         )),
+      );
+    }
+
+    if (_isStaff) {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+                'Ditugaskan', _totalIncidents.toString(), Icons.assignment_outlined),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+                'Dikerjakan', _inProgressTasks.toString(), Icons.engineering_outlined),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+                'Selesai', _completedIncidents.toString(), Icons.check_circle_outline),
+          ),
+        ],
       );
     }
 

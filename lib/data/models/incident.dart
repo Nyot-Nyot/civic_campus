@@ -9,6 +9,7 @@ class Incident {
   final int confirmationCount;
   final String description;
   final String? assignedTo;
+  final String priority;
 
   const Incident({
     required this.id,
@@ -21,5 +22,6 @@ class Incident {
     this.confirmationCount = 0,
     this.description = '',
     this.assignedTo,
+    this.priority = 'Sedang',
   });
 }

@@ -24,6 +24,7 @@ const allIncidents = <Incident>[
     description:
         'AC tidak mengeluarkan udara dingin sejak pagi, remote tidak berfungsi.',
     assignedTo: 'Budi Teknisi',
+    priority: 'Tinggi',
   ),
   Incident(
     id: 'INC-002',
@@ -35,6 +36,7 @@ const allIncidents = <Incident>[
     photoCount: 1,
     confirmationCount: 5,
     description: '3 lampu koridor mati total, area gelap.',
+    priority: 'Sedang',
   ),
   Incident(
     id: 'INC-003',
@@ -46,6 +48,7 @@ const allIncidents = <Incident>[
     photoCount: 1,
     confirmationCount: 1,
     assignedTo: 'Budi Teknisi',
+    priority: 'Sedang',
   ),
   Incident(
     id: 'INC-004',
@@ -57,6 +60,7 @@ const allIncidents = <Incident>[
     photoCount: 3,
     confirmationCount: 2,
     assignedTo: 'Budi Teknisi',
+    priority: 'Rendah',
   ),
   Incident(
     id: 'INC-005',
@@ -67,6 +71,7 @@ const allIncidents = <Incident>[
     timeAgo: '1 minggu lalu',
     photoCount: 1,
     confirmationCount: 0,
+    priority: 'Rendah',
   ),
   Incident(
     id: 'INC-006',
@@ -77,6 +82,7 @@ const allIncidents = <Incident>[
     timeAgo: '30 menit lalu',
     photoCount: 1,
     confirmationCount: 8,
+    priority: 'Tinggi',
   ),
   Incident(
     id: 'INC-007',
@@ -88,6 +94,7 @@ const allIncidents = <Incident>[
     photoCount: 2,
     confirmationCount: 4,
     assignedTo: 'Budi Teknisi',
+    priority: 'Tinggi',
   ),
   Incident(
     id: 'INC-008',
@@ -98,6 +105,7 @@ const allIncidents = <Incident>[
     timeAgo: '2 minggu lalu',
     photoCount: 1,
     confirmationCount: 2,
+    priority: 'Rendah',
   ),
 ];
 
@@ -141,6 +149,18 @@ const categoryColors = <String, Color>{
   'WiFi': Color(0xFF6366F1),
   'Kebersihan': Color(0xFF14B8A6),
   'Struktur': Color(0xFFEF4444),
+};
+
+const priorityColors = <String, Color>{
+  'Tinggi': Color(0xFFEF4444),
+  'Sedang': Color(0xFFF97316),
+  'Rendah': Color(0xFF6B7280),
+};
+
+const priorityBgColors = <String, Color>{
+  'Tinggi': Color(0xFFFEE2E2),
+  'Sedang': Color(0xFFFFEDD5),
+  'Rendah': Color(0xFFF3F4F6),
 };
 
 const statusFlow = [

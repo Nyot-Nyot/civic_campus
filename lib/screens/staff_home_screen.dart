@@ -99,7 +99,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     switch (_selectedIndex) {
       case 0: return const _MyTasksTab();
       case 1: return const NotificationScreen();
-      case 2: return const ProfileScreen();
+      case 2: return ProfileScreen(staffName: staffUser.name);
       default: return const SizedBox.shrink();
     }
   }
@@ -120,6 +120,19 @@ class _MyTasksTabState extends State<_MyTasksTab> {
   final _repo = IncidentRepository();
   List<Incident> _tasks = [];
   bool _isLoading = true;
+  String _activeFilter = 'Semua';
+
+  final _filters = ['Semua', 'Open', 'Assigned', 'In Progress', 'Resolved'];
+
+  List<Incident> get _filteredTasks {
+    final sorted = List<Incident>.from(_tasks)
+      ..sort((a, b) {
+        const order = ['Tinggi', 'Sedang', 'Rendah'];
+        return order.indexOf(a.priority).compareTo(order.indexOf(b.priority));
+      });
+    if (_activeFilter == 'Semua') return sorted;
+    return sorted.where((t) => t.status == _activeFilter).toList();
+  }
 
   @override
   void initState() {
@@ -141,74 +154,158 @@ class _MyTasksTabState extends State<_MyTasksTab> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              Text(
-                'Halo, ${staffUser.name}',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Berikut tugas yang ditugaskan kepada Anda.',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Tugas Saya',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 14),
-            ]),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          sliver: _isLoading
-              ? const SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
+    final tasks = _filteredTasks;
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Text(
+                  'Halo, ${staffUser.name}',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                   ),
-                )
-              : _tasks.isEmpty
-                  ? const SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: Text(
-                            'Tidak ada tugas saat ini.',
-                            style: TextStyle(
-                              color: Color(0xFF9CA3AF),
-                              fontSize: 14,
-                            ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Berikut tugas yang ditugaskan kepada Anda.',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Tugas Saya',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final f = _filters[index];
+                      final selected = _activeFilter == f;
+                      return ChoiceChip(
+                        label: Text(f),
+                        selected: selected,
+                        onSelected: (_) => setState(() => _activeFilter = f),
+                        labelStyle: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF6B7280),
+                        ),
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        selectedColor: const Color(0xFF111827),
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ]),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: _isLoading
+                ? SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 200,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  )
+                  : tasks.isEmpty
+                    ? SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 40),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.task_alt,
+                                size: 56,
+                                color: Color(0xFFD1D5DB),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Tidak ada tugas saat ini.',
+                                style: TextStyle(
+                                  color: Color(0xFF9CA3AF),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Tugas baru akan muncul di sini\nsetelah admin menugaskan Anda.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFFD1D5DB),
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    )
+                      )
                   : SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        final item = _tasks[index];
+                        final item = tasks[index];
                         return Padding(
                           padding: EdgeInsets.only(
-                            bottom: index == _tasks.length - 1 ? 0 : 14,
+                            bottom: index == tasks.length - 1 ? 0 : 14,
                           ),
                           child: _buildTaskCard(context, item),
                         );
-                      }, childCount: _tasks.length),
+                      }, childCount: tasks.length),
                     ),
-        ),
-      ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusDots(String currentStatus) {
+    final currentIdx = statusFlow.indexOf(currentStatus).clamp(0, statusFlow.length - 1);
+    return Row(
+      children: List.generate(statusFlow.length, (index) {
+        final isCompleted = index < currentIdx;
+        final isCurrent = index == currentIdx;
+        return Expanded(
+          child: Container(
+            height: 3,
+            margin: EdgeInsets.only(
+              right: index < statusFlow.length - 1 ? 4 : 0,
+            ),
+            decoration: BoxDecoration(
+              color: isCompleted
+                  ? const Color(0xFF047857)
+                  : isCurrent
+                      ? const Color(0xFF1D4ED8)
+                      : const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -221,13 +318,17 @@ class _MyTasksTabState extends State<_MyTasksTab> {
         categoryIcons[item.category] ?? Icons.help_outline;
     final categoryColor =
         categoryColors[item.category] ?? const Color(0xFF9CA3AF);
+    final prioColor =
+        priorityColors[item.priority] ?? const Color(0xFF6B7280);
+    final prioBg =
+        priorityBgColors[item.priority] ?? const Color(0xFFF3F4F6);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => IncidentDetailScreen(
                 incident: item,
@@ -235,6 +336,8 @@ class _MyTasksTabState extends State<_MyTasksTab> {
               ),
             ),
           );
+          if (!mounted) return;
+          _load();
         },
         child: Card(
           margin: EdgeInsets.zero,
@@ -246,14 +349,34 @@ class _MyTasksTabState extends State<_MyTasksTab> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(categoryIcon, color: categoryColor, size: 22),
+                Stack(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(categoryIcon, color: categoryColor, size: 22),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: prioColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: prioBg,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -340,6 +463,8 @@ class _MyTasksTabState extends State<_MyTasksTab> {
                           ],
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      _buildStatusDots(item.status),
                     ],
                   ),
                 ),
@@ -357,4 +482,5 @@ class _MyTasksTabState extends State<_MyTasksTab> {
 
 // ---------------------------------------------------------------------------
 // Tab 1: Notifikasi — reuse NotificationScreen
-// Tab 2: Profil — reuse ProfileScreen// ---------------------------------------------------------------------------
+// Tab 2: Profil — reuse ProfileScreen
+// ---------------------------------------------------------------------------

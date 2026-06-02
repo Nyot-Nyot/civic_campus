@@ -15,6 +15,18 @@ class IncidentDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final prioColor =
+        priorityColors[incident.priority] ?? const Color(0xFF6B7280);
+
+    final showSticky = showStaffActions &&
+        (incident.status == 'Assigned' || incident.status == 'In Progress');
+    final stickyLabel = incident.status == 'Assigned'
+        ? 'Mulai Kerjakan'
+        : 'Selesaikan Tugas';
+    final stickyIcon = incident.status == 'Assigned'
+        ? Icons.play_arrow_rounded
+        : Icons.check_circle_outline;
+
     return Scaffold(
       body: SafeArea(
         child: _IncidentDetailBody(
@@ -22,6 +34,37 @@ class IncidentDetailScreen extends StatelessWidget {
           showStaffActions: showStaffActions,
         ),
       ),
+      bottomNavigationBar: showSticky
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${incident.id} ${stickyLabel == 'Mulai Kerjakan' ? 'mulai dikerjakan' : 'ditandai selesai'}.',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(stickyIcon, size: 20),
+                    label: Text(stickyLabel),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: prioColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
@@ -152,6 +195,8 @@ class _IncidentDetailBody extends StatelessWidget {
                 _buildInfoRow(Icons.people, 'Konfirmasi',
                     '+${incident.confirmationCount} orang'),
               ],
+              const SizedBox(height: 12),
+              _buildPriorityRow(incident.priority),
               const SizedBox(height: 28),
               const Text(
                 'Deskripsi',
@@ -225,6 +270,39 @@ class _IncidentDetailBody extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Color(0xFF111827),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriorityRow(String priority) {
+    final color = priorityColors[priority] ?? const Color(0xFF6B7280);
+    final bg = priorityBgColors[priority] ?? const Color(0xFFF3F4F6);
+    return Row(
+      children: [
+        const Icon(Icons.flag_outlined, size: 16, color: Color(0xFF6B7280)),
+        const SizedBox(width: 8),
+        Text(
+          'Prioritas: ',
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            priority,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ),
@@ -575,91 +653,328 @@ class _IncidentDetailBody extends StatelessWidget {
   }
 
   void _showStatusUpdateSheet(BuildContext context, List<String> nextStatuses) {
+    final noteController = TextEditingController();
+    final isResolving = nextStatuses.contains('Resolved');
+
+    final photos = <String>[];
+    final parentContext = context;
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 16,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Update Status',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Ubah status laporan ${incident.id} ke status berikutnya:',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ...nextStatuses.map((status) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.of(sheetContext).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Status ${incident.id} diubah ke "$status".',
-                            ),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        side: const BorderSide(color: Color(0xFFE5E7EB)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        foregroundColor: const Color(0xFF111827),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: statusColors[status] ?? const Color(0xFF6B7280),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(status),
-                        ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                )),
-              ],
-            ),
-          ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Update Status',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Ubah status laporan ${incident.id} ke status berikutnya:',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...nextStatuses.map((status) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Status ${incident.id} diubah ke "$status".',
+                                ),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(50),
+                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                            foregroundColor: const Color(0xFF111827),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: statusColors[status] ?? const Color(0xFF6B7280),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(status),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )),
+                    const SizedBox(height: 8),
+                    Text(
+                      isResolving ? 'Bukti foto perbaikan (opsional)' : 'Catatan pekerjaan (opsional)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (photos.isEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                              ),
+                              builder: (ctx) => SafeArea(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 40, height: 4,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE5E7EB),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      const Text(
+                                        'Tambah Bukti Foto',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF111827),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      _buildPhotoSourceTile(ctx, Icons.camera_alt_outlined, 'Ambil Foto',
+                                          'Gunakan kamera untuk mengambil foto'),
+                                      const SizedBox(height: 12),
+                                      _buildPhotoSourceTile(ctx, Icons.photo_library_outlined, 'Pilih dari Galeri',
+                                          'Pilih foto yang sudah ada'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                          label: Text(isResolving ? 'Tambah Foto Bukti' : 'Tambah Foto'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            foregroundColor: const Color(0xFF374151),
+                          ),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        height: 72,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: photos.length + 1,
+                          separatorBuilder: (_, _) => const SizedBox(width: 10),
+                          itemBuilder: (_, index) {
+                            if (index == photos.length) {
+                              return GestureDetector(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                                    ),
+                                    builder: (ctx) => SafeArea(
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 40, height: 4,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE5E7EB),
+                                                borderRadius: BorderRadius.circular(2),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                    Text(
+                                              'Tambah Bukti Foto',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF111827),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            _buildPhotoSourceTile(ctx, Icons.camera_alt_outlined, 'Ambil Foto',
+                                                'Gunakan kamera untuk mengambil foto'),
+                                            const SizedBox(height: 12),
+                                            _buildPhotoSourceTile(ctx, Icons.photo_library_outlined, 'Pilih dari Galeri',
+                                                'Pilih foto yang sudah ada'),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 72,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                                  ),
+                                  child: const Icon(Icons.add, color: Color(0xFF9CA3AF)),
+                                ),
+                              );
+                            }
+                            return Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.image_outlined, size: 28, color: Color(0xFF9CA3AF)),
+                                  SizedBox(height: 2),
+                                  Text('Foto', style: TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: noteController,
+                      maxLines: 3,
+                      maxLength: 300,
+                      decoration: InputDecoration(
+                        hintText: isResolving
+                            ? 'Jelaskan hasil perbaikan...'
+                            : 'Tambahkan catatan...',
+                        hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                        filled: true,
+                        fillColor: const Color(0xFFF9FAFB),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF111827), width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
+    ).whenComplete(() => noteController.dispose());
+  }
+
+  Widget _buildPhotoSourceTile(BuildContext context, IconData icon, String title, String subtitle) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Fitur akan tersedia setelah integrasi kamera/galeri.')),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111827),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF111827))),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
