@@ -32,4 +32,13 @@ class UserRepository {
     allUsers.removeAt(index);
     return true;
   }
+
+  Future<bool> toggleUserActive(String email) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = allUsers.indexWhere((u) => u.email == email);
+    if (index == -1) return false;
+    final user = allUsers[index];
+    allUsers[index] = user.copyWith(isActive: !user.isActive);
+    return true;
+  }
 }

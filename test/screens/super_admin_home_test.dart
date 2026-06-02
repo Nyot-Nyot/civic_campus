@@ -96,7 +96,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.list_alt_outlined));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Open'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Menunggu Penanganan'));
       await tester.pumpAndSettle();
 
       expect(find.text('Lampu koridor mati'), findsOneWidget);
