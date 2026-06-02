@@ -122,7 +122,7 @@ class _MyTasksTabState extends State<_MyTasksTab> {
   bool _isLoading = true;
   String _activeFilter = 'Semua';
 
-  final _filters = ['Semua', 'Open', 'Assigned', 'In Progress', 'Resolved'];
+  final _filters = ['Semua', statusOpen, statusAssigned, statusInProgress, statusResolved];
 
   List<Incident> get _filteredTasks {
     final sorted = List<Incident>.from(_tasks)
@@ -438,14 +438,32 @@ class _MyTasksTabState extends State<_MyTasksTab> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.access_time,
-                              size: 12, color: const Color(0xFF9CA3AF)),
+                          Tooltip(
+                            message: item.isOverdue() ? 'Terlambat' : '',
+                            child: Semantics(
+                              label: item.isOverdue()
+                                  ? 'Laporan terlambat'
+                                  : '',
+                              child: Icon(Icons.access_time,
+                                  size: 12,
+                                  color: item.isOverdue()
+                                      ? const Color(0xFFD97706)
+                                      : const Color(0xFF9CA3AF)),
+                            ),
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            item.timeAgo,
-                            style: const TextStyle(
+                            item.isOverdue()
+                                ? '${item.timeAgo} (terlambat)'
+                                : item.timeAgo,
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF9CA3AF),
+                              color: item.isOverdue()
+                                  ? const Color(0xFFD97706)
+                                  : const Color(0xFF9CA3AF),
+                              fontWeight: item.isOverdue()
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                           if (item.confirmationCount > 0) ...[

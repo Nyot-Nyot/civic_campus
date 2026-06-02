@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/building.dart';
+import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
 
 class NewReportScreen extends StatefulWidget {
@@ -1090,7 +1091,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: s.status == 'In Progress'
+                                    color: s.status == statusInProgress
                                         ? const Color(0xFFFFEDD5)
                                         : const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(8),
@@ -1100,7 +1101,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
-                                      color: s.status == 'In Progress'
+                                      color: s.status == statusInProgress
                                           ? const Color(0xFFC2410C)
                                           : const Color(0xFF1D4ED8),
                                     ),

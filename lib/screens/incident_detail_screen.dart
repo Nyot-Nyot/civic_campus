@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
+import '../data/repositories/incident_repository.dart';
 import '../data/dummy_data.dart';
 
-class IncidentDetailScreen extends StatelessWidget {
+class IncidentDetailScreen extends StatefulWidget {
   final Incident incident;
   final bool showStaffActions;
 
@@ -14,24 +15,68 @@ class IncidentDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<IncidentDetailScreen> createState() => _IncidentDetailScreenState();
+}
+
+class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
+  final _repo = IncidentRepository();
+  late Incident _incident;
+  final _bodyKey = GlobalKey<_IncidentDetailBodyState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _incident = widget.incident;
+  }
+
+  Future<void> _handleStickyAction() async {
+    if (_incident.status == statusInProgress) {
+      _bodyKey.currentState?.showResolveSheet(context);
+      return;
+    }
+    final ok = await _repo.updateStatus(_incident.id, statusInProgress);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Laporan tidak ditemukan.')),
+      );
+      return;
+    }
+    setState(() {
+      _incident = allIncidents.firstWhere((i) => i.id == _incident.id);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${_incident.id} mulai dikerjakan.',
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prioColor =
-        priorityColors[incident.priority] ?? const Color(0xFF6B7280);
+        priorityColors[_incident.priority] ?? const Color(0xFF6B7280);
 
-    final showSticky = showStaffActions &&
-        (incident.status == 'Assigned' || incident.status == 'In Progress');
-    final stickyLabel = incident.status == 'Assigned'
+    final showSticky = widget.showStaffActions &&
+        (_incident.status == statusAssigned || _incident.status == statusInProgress);
+    final stickyLabel = _incident.status == statusAssigned
         ? 'Mulai Kerjakan'
         : 'Selesaikan Tugas';
-    final stickyIcon = incident.status == 'Assigned'
+    final stickyIcon = _incident.status == statusAssigned
         ? Icons.play_arrow_rounded
         : Icons.check_circle_outline;
 
     return Scaffold(
       body: SafeArea(
         child: _IncidentDetailBody(
-          incident: incident,
-          showStaffActions: showStaffActions,
+          key: _bodyKey,
+          incident: _incident,
+          showStaffActions: widget.showStaffActions,
+          onStatusUpdated: (updated) {
+            setState(() => _incident = updated);
+          },
         ),
       ),
       bottomNavigationBar: showSticky
@@ -42,15 +87,7 @@ class IncidentDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${incident.id} ${stickyLabel == 'Mulai Kerjakan' ? 'mulai dikerjakan' : 'ditandai selesai'}.',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: _handleStickyAction,
                     icon: Icon(stickyIcon, size: 20),
                     label: Text(stickyLabel),
                     style: ElevatedButton.styleFrom(
@@ -69,25 +106,41 @@ class IncidentDetailScreen extends StatelessWidget {
   }
 }
 
-class _IncidentDetailBody extends StatelessWidget {
+class _IncidentDetailBody extends StatefulWidget {
   final Incident incident;
   final bool showStaffActions;
+  final ValueChanged<Incident>? onStatusUpdated;
 
   const _IncidentDetailBody({
+    super.key,
     required this.incident,
     this.showStaffActions = false,
+    this.onStatusUpdated,
   });
+
+  @override
+  State<_IncidentDetailBody> createState() => _IncidentDetailBodyState();
+}
+
+class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
+  final _repo = IncidentRepository();
+
+  Incident get _incident => widget.incident;
+
+  void showResolveSheet(BuildContext context) {
+    _showStatusUpdateSheet(context, [statusResolved]);
+  }
 
   @override
   Widget build(BuildContext context) {
     final categoryIcon =
-        categoryIcons[incident.category] ?? Icons.help_outline;
+        categoryIcons[_incident.category] ?? Icons.help_outline;
     final categoryColor =
-        categoryColors[incident.category] ?? const Color(0xFF9CA3AF);
+        categoryColors[_incident.category] ?? const Color(0xFF9CA3AF);
     final statusColor =
-        statusColors[incident.status] ?? const Color(0xFF6B7280);
+        statusColors[_incident.status] ?? const Color(0xFF6B7280);
     final statusBg =
-        statusBgColors[incident.status] ?? const Color(0xFFF3F4F6);
+        statusBgColors[_incident.status] ?? const Color(0xFFF3F4F6);
 
     return CustomScrollView(
       slivers: [
@@ -140,25 +193,25 @@ class _IncidentDetailBody extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          incident.title,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: statusBg,
-                                borderRadius: BorderRadius.circular(14),
+                          _incident.title,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
                               ),
-                              child: Text(
-                                incident.status,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text(
+                                    _incident.status,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -168,7 +221,7 @@ class _IncidentDetailBody extends StatelessWidget {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              incident.id,
+                              _incident.id,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF9CA3AF),
@@ -179,24 +232,24 @@ class _IncidentDetailBody extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildInfoRow(Icons.location_on, 'Lokasi', incident.location),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                  Icons.category_outlined, 'Kategori', incident.category),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                  Icons.access_time, 'Waktu', '${incident.timeAgo} dilaporkan'),
-              if (incident.confirmationCount > 0) ...[
+    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildInfoRow(Icons.location_on, 'Lokasi', _incident.location),
                 const SizedBox(height: 12),
-                _buildInfoRow(Icons.people, 'Konfirmasi',
-                    '+${incident.confirmationCount} orang'),
-              ],
-              const SizedBox(height: 12),
-              _buildPriorityRow(incident.priority),
+                _buildInfoRow(
+                    Icons.category_outlined, 'Kategori', _incident.category),
+                const SizedBox(height: 12),
+                _buildInfoRow(
+                    Icons.access_time, 'Waktu', '${_incident.timeAgo} dilaporkan'),
+                if (_incident.confirmationCount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildInfoRow(Icons.people, 'Konfirmasi',
+                      '+${_incident.confirmationCount} orang'),
+                ],
+                const SizedBox(height: 12),
+                _buildPriorityRow(_incident.priority),
               const SizedBox(height: 28),
               const Text(
                 'Deskripsi',
@@ -208,13 +261,13 @@ class _IncidentDetailBody extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                incident.description.isNotEmpty
-                    ? incident.description
+                _incident.description.isNotEmpty
+                    ? _incident.description
                     : 'Tidak ada deskripsi tambahan.',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.6,
-                  color: incident.description.isNotEmpty
+                  color: _incident.description.isNotEmpty
                       ? const Color(0xFF374151)
                       : const Color(0xFF9CA3AF),
                 ),
@@ -242,7 +295,7 @@ class _IncidentDetailBody extends StatelessWidget {
               const SizedBox(height: 14),
               _buildPhotoGrid(),
               const SizedBox(height: 28),
-              _buildActions(context, showStaffActions),
+              _buildActions(context, widget.showStaffActions),
               const SizedBox(height: 16),
             ]),
           ),
@@ -312,7 +365,7 @@ class _IncidentDetailBody extends StatelessWidget {
 
   Widget _buildTimeline() {
     final currentIndex =
-        statusFlow.indexOf(incident.status).clamp(0, statusFlow.length - 1);
+        statusFlow.indexOf(_incident.status).clamp(0, statusFlow.length - 1);
 
     return Column(
       children: List.generate(statusFlow.length, (index) {
@@ -405,7 +458,7 @@ class _IncidentDetailBody extends StatelessWidget {
   }
 
   Widget _buildPhotoGrid() {
-    if (incident.photoCount == 0) {
+    if (_incident.photoCount == 0) {
       return const Text(
         'Tidak ada foto bukti.',
         style: TextStyle(
@@ -423,7 +476,7 @@ class _IncidentDetailBody extends StatelessWidget {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      itemCount: incident.photoCount,
+      itemCount: _incident.photoCount,
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
@@ -452,9 +505,9 @@ class _IncidentDetailBody extends StatelessWidget {
 
   Widget _buildActions(BuildContext context, bool isStaff) {
     final isResolvedOrClosed =
-        incident.status == 'Resolved' || incident.status == 'Closed';
+        _incident.status == statusResolved || _incident.status == statusClosed;
 
-    final currentIdx = statusFlow.indexOf(incident.status);
+    final currentIdx = statusFlow.indexOf(_incident.status);
     final nextStatuses = <String>[];
     if (currentIdx < statusFlow.length - 1 && isStaff) {
       for (var i = currentIdx + 1; i < statusFlow.length; i++) {
@@ -569,7 +622,7 @@ class _IncidentDetailBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Jelaskan alasan mengapa laporan ${incident.id} perlu ditinjau ulang.',
+                  'Jelaskan alasan mengapa laporan ${_incident.id} perlu ditinjau ulang.',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF6B7280),
@@ -654,10 +707,9 @@ class _IncidentDetailBody extends StatelessWidget {
 
   void _showStatusUpdateSheet(BuildContext context, List<String> nextStatuses) {
     final noteController = TextEditingController();
-    final isResolving = nextStatuses.contains('Resolved');
+    final isResolving = nextStatuses.contains(statusResolved);
 
     final photos = <String>[];
-    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
@@ -699,7 +751,7 @@ class _IncidentDetailBody extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Ubah status laporan ${incident.id} ke status berikutnya:',
+                      'Ubah status laporan ${_incident.id} ke status berikutnya:',
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF6B7280),
@@ -711,12 +763,35 @@ class _IncidentDetailBody extends StatelessWidget {
                       child: SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            final note = noteController.text;
+                            if (isResolving && note.trim().isEmpty) {
+                              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                const SnackBar(content: Text('Catatan pekerjaan wajib diisi sebelum menyelesaikan tugas.')),
+                              );
+                              return;
+                            }
                             Navigator.of(sheetContext).pop();
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                            final ok = await _repo.updateStatus(
+                              _incident.id,
+                              status,
+                              notes: note,
+                            );
+                            if (!mounted) return;
+                            if (!ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Laporan tidak ditemukan.')),
+                              );
+                              return;
+                            }
+                            final updated = allIncidents.firstWhere(
+                              (i) => i.id == _incident.id,
+                            );
+                            widget.onStatusUpdated?.call(updated);
+                            ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Status ${incident.id} diubah ke "$status".',
+                                  'Status ${_incident.id} diubah ke "$status".',
                                 ),
                               ),
                             );
@@ -749,7 +824,7 @@ class _IncidentDetailBody extends StatelessWidget {
                     )),
                     const SizedBox(height: 8),
                     Text(
-                      isResolving ? 'Bukti foto perbaikan (opsional)' : 'Catatan pekerjaan (opsional)',
+                      isResolving ? 'Catatan pekerjaan (wajib diisi)' : 'Catatan pekerjaan (opsional)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -802,7 +877,7 @@ class _IncidentDetailBody extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                          label: Text(isResolving ? 'Tambah Foto Bukti' : 'Tambah Foto'),
+                          label: Text('Tambah Foto'),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
                             side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -901,7 +976,7 @@ class _IncidentDetailBody extends StatelessWidget {
                       maxLength: 300,
                       decoration: InputDecoration(
                         hintText: isResolving
-                            ? 'Jelaskan hasil perbaikan...'
+                            ? 'Jelaskan hasil perbaikan... (wajib)'
                             : 'Tambahkan catatan...',
                         hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
                         filled: true,

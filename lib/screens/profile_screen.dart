@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
 import '../data/repositories/incident_repository.dart';
 import 'login_screen.dart';
@@ -48,8 +49,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
       if (!mounted) return;
       setState(() {
         _totalIncidents = tasks.length;
-        _inProgressTasks = tasks.where((t) => t.status == 'In Progress').length;
-        _completedIncidents = tasks.where((t) => t.status == 'Resolved' || t.status == 'Closed').length;
+        _inProgressTasks = tasks.where((t) => t.status == statusInProgress).length;
+        _completedIncidents = tasks.where((t) => t.status == statusResolved || t.status == statusClosed).length;
         _isLoadingStats = false;
       });
     } else {

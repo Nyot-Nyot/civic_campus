@@ -61,7 +61,7 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   }
 
   bool _isClosedOrResolved(String status) {
-    return status == 'Closed' || status == 'Resolved';
+    return status == statusClosed || status == statusResolved;
   }
 
   @override
