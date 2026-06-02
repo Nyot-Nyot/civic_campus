@@ -7,6 +7,8 @@ import '../data/repositories/user_repository.dart';
 import '../data/dummy_data.dart';
 import 'incident_detail_screen.dart';
 import 'login_screen.dart';
+import '../widgets/filter_dropdown.dart';
+import '../widgets/state_views.dart';
 
 class SuperAdminHomeScreen extends StatefulWidget {
   static const routeName = '/super-admin-home';
@@ -226,27 +228,8 @@ class _DashboardTabState extends State<_DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text(
-              'Gagal memuat dashboard.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat dashboard.', onRetry: _load);
 
     final resolvedPct = _totalIncidents > 0
         ? ((_resolvedCount + _closedCount) / _totalIncidents * 100).round()
@@ -626,25 +609,8 @@ class _UsersTabState extends State<_UsersTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text('Gagal memuat pengguna.',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat pengguna.', onRetry: _load);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -1269,7 +1235,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                 Row(
                   children: [
                     Expanded(
-                      child: _FilterDropdown(
+                      child: FilterDropdown(
                         label: 'Prioritas',
                         value: _activePriorityFilter == 'Semua' ? null : _activePriorityFilter,
                         items: _priorityFilters,
@@ -1289,7 +1255,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                     const SizedBox(width: 12),
                     if (_staffNames.isNotEmpty)
                       Expanded(
-                        child: _FilterDropdown(
+                        child: FilterDropdown(
                           label: 'Staff',
                           value: _staffFilter == 'Semua' ? null : _staffFilter,
                           items: ['Semua', ..._staffNames],
@@ -1305,28 +1271,9 @@ class _IncidentListTabState extends State<_IncidentListTab> {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: _isLoading
-                ? SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  )
+                ? const SliverLoadingView()
                 : _hasError
-                    ? SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 40),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-                              const SizedBox(height: 16),
-                              const Text('Gagal memuat insiden.',
-                                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500)),
-                              const SizedBox(height: 8),
-                              TextButton(onPressed: _load, child: const Text('Coba lagi')),
-                            ],
-                          ),
-                        ),
-                      )
+                    ? SliverErrorView(message: 'Gagal memuat insiden.', onRetry: _load)
                     : incidents.isEmpty
                         ? SliverToBoxAdapter(
                             child: Padding(
@@ -1416,25 +1363,8 @@ class _SystemConfigTabState extends State<_SystemConfigTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text('Gagal memuat konfigurasi.',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat konfigurasi.', onRetry: _load);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -2057,85 +1987,4 @@ class _AuditEntry extends StatelessWidget {
   }
 }
 
-class _FilterDropdown extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> items;
-  final Widget? icon;
-  final ValueChanged<String> onSelected;
 
-  const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    this.icon,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final displayText = value ?? label;
-    return PopupMenuButton<String>(
-      onSelected: onSelected,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      itemBuilder: (ctx) => [
-        for (final item in items)
-          PopupMenuItem(
-            value: item,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (item != 'Semua' && label == 'Prioritas')
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      color: priorityColors[item] ?? const Color(0xFF6B7280),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                Text(
-                  item == 'Semua' ? 'Semua $label' : item,
-                  style: TextStyle(
-                    fontWeight: value == item ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: value != null ? const Color(0xFF111827) : const Color(0xFFD1D5DB)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              icon!,
-              const SizedBox(width: 6),
-            ],
-            Flexible(
-              child: Text(
-                displayText,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: value != null ? FontWeight.w600 : FontWeight.w500,
-                  color: value != null ? const Color(0xFF111827) : const Color(0xFF6B7280),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, size: 18, color: Color(0xFF9CA3AF)),
-          ],
-        ),
-      ),
-    );
-  }
-}

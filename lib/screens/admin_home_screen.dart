@@ -11,6 +11,8 @@ import '../data/repositories/user_repository.dart';
 import '../data/dummy_data.dart';
 import 'incident_detail_screen.dart';
 import 'login_screen.dart';
+import '../widgets/filter_dropdown.dart';
+import '../widgets/state_views.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   static const routeName = '/admin-home';
@@ -307,27 +309,8 @@ class _OverviewTabState extends State<_OverviewTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text(
-              'Gagal memuat overview.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat overview.', onRetry: _load);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -337,23 +320,11 @@ class _OverviewTabState extends State<_OverviewTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Overview',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
-              ),
-            ),
+            const Text('Overview',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
             const SizedBox(height: 8),
-            const Text(
-              'Ringkasan operasional fasilitas kampus.',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 16,
-                height: 1.5,
-              ),
-            ),
+            const Text('Ringkasan operasional fasilitas kampus.',
+                style: TextStyle(color: Color(0xFF6B7280), fontSize: 16, height: 1.5)),
             const SizedBox(height: 28),
 
             // Metric cards — 2×2 grid
@@ -361,14 +332,12 @@ class _OverviewTabState extends State<_OverviewTab> {
               child: Row(
                 children: [
                   Expanded(child: _MetricCard(
-                    label: 'Butuh Penanganan',
-                    value: '$_highPriorityCount',
+                    label: 'Butuh Penanganan', value: '$_highPriorityCount',
                     valueColor: const Color(0xFFEF4444),
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: _MetricCard(
-                    label: 'Belum Ditugaskan',
-                    value: '$_openCount',
+                    label: 'Belum Ditugaskan', value: '$_openCount',
                     valueColor: const Color(0xFF3B82F6),
                   )),
                 ],
@@ -379,14 +348,12 @@ class _OverviewTabState extends State<_OverviewTab> {
               child: Row(
                 children: [
                   Expanded(child: _MetricCard(
-                    label: 'Terlambat',
-                    value: '$_overdueCount',
+                    label: 'Terlambat', value: '$_overdueCount',
                     valueColor: const Color(0xFFFBBF24),
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: _MetricCard(
-                    label: 'Beban Staff Aktif',
-                    value: '$_activeStaffCount',
+                    label: 'Beban Staff Aktif', value: '$_activeStaffCount',
                     valueColor: const Color(0xFF6B7280),
                   )),
                 ],
@@ -395,41 +362,25 @@ class _OverviewTabState extends State<_OverviewTab> {
             const SizedBox(height: 28),
 
             // Quick action cards
-            const Text(
-              'Aksi Cepat',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
-              ),
-            ),
+            const Text('Aksi Cepat',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(
-                  child: _QuickActionCard(
-                    label: 'Assign',
-                    icon: Icons.person_add_alt_1,
-                    color: const Color(0xFF3B82F6),
-                    onTap: () => widget.onQuickAction(statusOpen),
-                  ),
-                ),
+                Expanded(child: _QuickActionCard(
+                  label: 'Assign', icon: Icons.person_add_alt_1, color: const Color(0xFF3B82F6),
+                  onTap: () => widget.onQuickAction(statusOpen),
+                )),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: _QuickActionCard(
-                    label: 'Review',
-                    icon: Icons.rate_review_outlined,
-                    color: const Color(0xFFF97316),
-                    onTap: () => widget.onQuickAction(statusInProgress),
-                  ),
-                ),
+                Expanded(child: _QuickActionCard(
+                  label: 'Review', icon: Icons.rate_review_outlined, color: const Color(0xFFF97316),
+                  onTap: () => widget.onQuickAction(statusInProgress),
+                )),
               ],
             ),
             const SizedBox(height: 10),
             _QuickActionCard(
-              label: 'Tutup Insiden',
-              icon: Icons.check_circle_outline,
-              color: const Color(0xFF10B981),
+              label: 'Tutup Insiden', icon: Icons.check_circle_outline, color: const Color(0xFF10B981),
               onTap: () => widget.onQuickAction(statusResolved),
             ),
           ],
@@ -439,7 +390,6 @@ class _OverviewTabState extends State<_OverviewTab> {
   }
 
 }
-
 // ---------------------------------------------------------------------------
 // Tab 1: Incident List
 // ---------------------------------------------------------------------------
@@ -739,7 +689,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                 Row(
                   children: [
                     Expanded(
-                      child: _FilterDropdown(
+                      child: FilterDropdown(
                         label: 'Prioritas',
                         value: _activePriorityFilter == 'Semua' ? null : _activePriorityFilter,
                         items: _priorityFilters,
@@ -759,7 +709,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                     const SizedBox(width: 12),
                     if (_staffNames.isNotEmpty)
                       Expanded(
-                        child: _FilterDropdown(
+                        child: FilterDropdown(
                           label: 'Staff',
                           value: _staffFilter == 'Semua' ? null : _staffFilter,
                           items: ['Semua', ..._staffNames],
@@ -775,30 +725,9 @@ class _IncidentListTabState extends State<_IncidentListTab> {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: _isLoading
-                ? SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  )
+                ? const SliverLoadingView()
                 : _hasError
-                  ? SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Column(
-                          children: [
-                            Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-                            SizedBox(height: 16),
-                            Text(
-                              'Gagal memuat insiden.',
-                              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                            SizedBox(height: 8),
-                            TextButton(onPressed: _load, child: Text('Coba lagi')),
-                          ],
-                        ),
-                      ),
-                    )
+                  ? SliverErrorView(message: 'Gagal memuat insiden.', onRetry: _load)
                   : incidents.isEmpty
                   ? SliverToBoxAdapter(
                       child: Padding(
@@ -1076,26 +1005,8 @@ class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text(
-              'Gagal memuat beban kerja.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat beban kerja.', onRetry: _load);
     if (_staffLoads.isEmpty) {
       return const Center(
         child: Column(
@@ -1325,26 +1236,8 @@ class _MasterDataTabState extends State<_MasterDataTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            const Text(
-              'Gagal memuat master data.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: const Text('Coba lagi')),
-          ],
-        ),
-      );
-    }
+    if (_isLoading) return const LoadingView();
+    if (_hasError) return ErrorView(message: 'Gagal memuat master data.', onRetry: _load);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -2144,87 +2037,3 @@ class _QuickActionCard extends StatelessWidget {
   }
 }
 
-class _FilterDropdown extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> items;
-  final Widget? icon;
-  final ValueChanged<String> onSelected;
-
-  const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    this.icon,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final displayText = value ?? label;
-    return PopupMenuButton<String>(
-      onSelected: onSelected,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      itemBuilder: (ctx) => [
-        for (final item in items)
-          PopupMenuItem(
-            value: item,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (item != 'Semua' && label == 'Prioritas')
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      color: priorityColors[item] ?? const Color(0xFF6B7280),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                Text(
-                  item == 'Semua' ? 'Semua $label' : item,
-                  style: TextStyle(
-                    fontWeight: value == item ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: value != null ? const Color(0xFF111827) : const Color(0xFFD1D5DB)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              icon!,
-              const SizedBox(width: 6),
-            ],
-            Flexible(
-              child: Text(
-                displayText,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: value != null ? FontWeight.w600 : FontWeight.w500,
-                  color: value != null ? const Color(0xFF111827) : const Color(0xFF6B7280),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, size: 18, color: Color(0xFF9CA3AF)),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -7,6 +7,7 @@ import '../data/repositories/notification_repository.dart';
 import 'incident_detail_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
+import '../widgets/state_views.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   static const routeName = '/staff-home';
@@ -272,41 +273,9 @@ class _MyTasksTabState extends State<_MyTasksTab> {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: _isLoading
-                ? SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  )
+                ? const SliverLoadingView()
                 : _hasError
-                  ? SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 56,
-                              color: Color(0xFFEF4444),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Gagal memuat tugas.',
-                              style: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            TextButton(
-                              onPressed: _load,
-                              child: Text('Coba lagi'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
+                  ? SliverErrorView(message: 'Gagal memuat tugas.', onRetry: _load)
                   : tasks.isEmpty
                     ? SliverToBoxAdapter(
                         child: Padding(
