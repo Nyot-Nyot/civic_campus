@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
 import '../data/repositories/incident_repository.dart';
+import '../data/repositories/notification_repository.dart';
 import 'incident_detail_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
@@ -18,6 +19,20 @@ class StaffHomeScreen extends StatefulWidget {
 
 class _StaffHomeScreenState extends State<StaffHomeScreen> {
   int _selectedIndex = 0;
+  int _unreadNotificationCount = 0;
+  final _notificationRepo = NotificationRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final count = await _notificationRepo.getUnreadCount();
+    if (!mounted) return;
+    setState(() => _unreadNotificationCount = count);
+  }
 
   static const _icons = <IconData>[
     Icons.assignment_outlined,
@@ -62,26 +77,46 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 return Expanded(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(34),
-                    onTap: () => setState(() => _selectedIndex = index),
+                    onTap: () {
+                      setState(() => _selectedIndex = index);
+                      if (index == 1) _loadUnreadCount();
+                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Center(
-                        child: Container(
-                          width: selected ? 60 : 44,
-                          height: selected ? 60 : 44,
-                          decoration: selected
-                              ? const BoxDecoration(
-                                  color: Colors.white24,
-                                  shape: BoxShape.circle,
-                                )
-                              : null,
-                          child: Icon(
-                            icon,
-                            color: selected
-                                ? Colors.white
-                                : const Color(0xFF9CA3AF),
-                            size: selected ? 28 : 24,
-                          ),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: selected ? 60 : 44,
+                              height: selected ? 60 : 44,
+                              decoration: selected
+                                  ? const BoxDecoration(
+                                      color: Colors.white24,
+                                      shape: BoxShape.circle,
+                                    )
+                                  : null,
+                              child: Icon(
+                                icon,
+                                color: selected
+                                    ? Colors.white
+                                    : const Color(0xFF9CA3AF),
+                                size: selected ? 28 : 24,
+                              ),
+                            ),
+                            if (index == 1 && _unreadNotificationCount > 0)
+                              Positioned(
+                                top: selected ? 4 : 0,
+                                right: selected ? 4 : 0,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -98,7 +133,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
       case 0: return const _MyTasksTab();
-      case 1: return const NotificationScreen();
+      case 1: return const NotificationScreen(showStaffActions: true);
       case 2: return ProfileScreen(staffName: staffUser.name);
       default: return const SizedBox.shrink();
     }
@@ -120,6 +155,7 @@ class _MyTasksTabState extends State<_MyTasksTab> {
   final _repo = IncidentRepository();
   List<Incident> _tasks = [];
   bool _isLoading = true;
+  bool _hasError = false;
   String _activeFilter = 'Semua';
 
   final _filters = ['Semua', statusOpen, statusAssigned, statusInProgress, statusResolved];
@@ -141,14 +177,24 @@ class _MyTasksTabState extends State<_MyTasksTab> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
     try {
       final items = await _repo.getAssignedTo(staffUser.name);
       if (!mounted) return;
-      setState(() => _tasks = items);
+      setState(() {
+        _tasks = items;
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint('_MyTasksTab._load error: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
     }
   }
 
@@ -232,6 +278,35 @@ class _MyTasksTabState extends State<_MyTasksTab> {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                   )
+                : _hasError
+                  ? SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 56,
+                              color: Color(0xFFEF4444),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Gagal memuat tugas.',
+                              style: TextStyle(
+                                color: Color(0xFF9CA3AF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            TextButton(
+                              onPressed: _load,
+                              child: Text('Coba lagi'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   : tasks.isEmpty
                     ? SliverToBoxAdapter(
                         child: Padding(

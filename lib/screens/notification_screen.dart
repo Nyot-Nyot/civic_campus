@@ -6,7 +6,9 @@ import '../data/repositories/notification_repository.dart';
 import 'incident_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
+  final bool showStaffActions;
+
+  const NotificationScreen({super.key, this.showStaffActions = false});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -15,16 +17,28 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   final _notificationRepo = NotificationRepository();
   final _incidentRepo = IncidentRepository();
-  late List<NotificationItem> _notifications;
+  List<NotificationItem> _notifications = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _notificationRepo.getAll().then((items) {
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    try {
+      final items = await _notificationRepo.getAll();
       if (!mounted) return;
-      setState(() => _notifications = items);
-    });
-    _notifications = [];
+      setState(() {
+        _notifications = items;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('_loadNotifications error: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   int get _unreadCount => _notifications.where((n) => n.isUnread).length;
@@ -36,7 +50,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => IncidentDetailScreen(incident: incident),
+        builder: (context) => IncidentDetailScreen(
+          incident: incident,
+          showStaffActions: widget.showStaffActions,
+        ),
       ),
     );
   }
@@ -145,8 +162,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ],
             const SizedBox(height: 16),
             Expanded(
-              child: _notifications.isEmpty
-                  ? const Center(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _notifications.isEmpty
+                      ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

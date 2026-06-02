@@ -79,7 +79,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Widget _buildHomeTab(BuildContext context) {
-    return CustomScrollView(
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -378,13 +381,12 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     ),
         ),
       ],
+    ),
     );
   }
 
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
-      case 1:
-        return const SizedBox.shrink();
       case 2:
         return const MyIncidentsScreen();
       case 3:

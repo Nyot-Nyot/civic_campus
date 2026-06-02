@@ -36,12 +36,18 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   }
 
   Future<void> _loadData() async {
-    final incidents = await _incidentRepo.getAll();
-    if (!mounted) return;
-    setState(() {
-      _allIncidents = incidents;
-      _isLoading = false;
-    });
+    try {
+      final incidents = await _incidentRepo.getAll();
+      if (!mounted) return;
+      setState(() {
+        _allIncidents = incidents;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('_loadData error: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
   }
 
   List<Incident> get _filtered {
@@ -68,109 +74,121 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Insiden Saya',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pantau status laporan yang telah Anda buat.',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 16,
-                  height: 1.5,
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Insiden Saya',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 38,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _filters.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final isSelected = _selectedFilter == index;
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(19),
-                        onTap: () =>
-                            setState(() => _selectedFilter = index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 9),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF111827)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(19),
-                            border: Border.all(
+                const SizedBox(height: 8),
+                const Text(
+                  'Pantau status laporan yang telah Anda buat.',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final isSelected = _selectedFilter == index;
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(19),
+                          onTap: () =>
+                              setState(() => _selectedFilter = index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 9),
+                            decoration: BoxDecoration(
                               color: isSelected
                                   ? const Color(0xFF111827)
-                                  : const Color(0xFFE5E7EB),
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(19),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF111827)
+                                    : const Color(0xFFE5E7EB),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            _filters[index],
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF6B7280),
+                            child: Text(
+                              _filters[index],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF6B7280),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : filtered.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inbox_outlined,
-                              size: 56, color: Color(0xFFD1D5DB)),
-                          SizedBox(height: 16),
-                          Text(
-                            'Belum ada laporan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF9CA3AF),
-                              fontWeight: FontWeight.w500,
+          const SizedBox(height: 20),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(
+                            height: 300,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.inbox_outlined,
+                                      size: 56, color: Color(0xFFD1D5DB)),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Belum ada laporan',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF9CA3AF),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (context, index) {
+                          return _buildIncidentCard(context, filtered[index]);
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) {
-                        return _buildIncidentCard(context, filtered[index]);
-                      },
-                    ),
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 

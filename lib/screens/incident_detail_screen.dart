@@ -313,22 +313,59 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    onPressed: _handleStickyAction,
-                    icon: Icon(stickyIcon, size: 20),
-                    label: Text(stickyLabel),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: stickyColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
+                child: widget.showStaffActions && _incident.status == statusInProgress
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () =>
+                                  _bodyKey.currentState?.showNotesSheet(context),
+                              icon: const Icon(Icons.edit_note, size: 20),
+                              label: const Text('Tambah Catatan'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(52),
+                                side: const BorderSide(color: Color(0xFFE5E7EB)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                foregroundColor: const Color(0xFF374151),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _handleStickyAction,
+                              icon: Icon(stickyIcon, size: 20),
+                              label: Text(stickyLabel),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(52),
+                                backgroundColor: stickyColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: _handleStickyAction,
+                          icon: Icon(stickyIcon, size: 20),
+                          label: Text(stickyLabel),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: stickyColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
               ),
             )
           : null,
@@ -361,6 +398,25 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
 
   void showResolveSheet(BuildContext context) {
     _showStatusUpdateSheet(context, [statusResolved]);
+  }
+
+  void showNotesSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return _NotesSheet(
+          incident: _incident,
+          onSaved: (updated) {
+            setState(() {});
+            widget.onStatusUpdated?.call(updated);
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -1204,6 +1260,7 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (sheetContext) {
+        String? activeStatus;
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
@@ -1244,54 +1301,69 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ...nextStatuses.map((status) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final note = noteController.text;
-                            if (isResolving && note.trim().isEmpty) {
-                              ScaffoldMessenger.of(sheetContext).showSnackBar(
-                                const SnackBar(content: Text('Catatan pekerjaan wajib diisi sebelum menyelesaikan tugas.')),
+                    ...nextStatuses.map((status) {
+                      final isActive = activeStatus == status;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: isActive ? null : () async {
+                              final note = noteController.text;
+                              if (isResolving && note.trim().isEmpty) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  const SnackBar(content: Text('Catatan pekerjaan wajib diisi sebelum menyelesaikan tugas.')),
+                                );
+                                return;
+                              }
+                              setSheetState(() => activeStatus = status);
+                              final ok = await _repo.updateStatus(
+                                _incident.id,
+                                status,
+                                notes: note,
                               );
-                              return;
-                            }
-                            Navigator.of(sheetContext).pop();
-                            final ok = await _repo.updateStatus(
-                              _incident.id,
-                              status,
-                              notes: note,
-                            );
-                            if (!mounted) return;
-                            if (!ok) {
+                              if (!sheetContext.mounted) return;
+                              Navigator.of(sheetContext).pop();
+                              if (!mounted) return;
+                              if (!ok) {
+                                ScaffoldMessenger.of(this.context).showSnackBar(
+                                  const SnackBar(content: Text('Laporan tidak ditemukan.')),
+                                );
+                                return;
+                              }
+                              final updated = allIncidents.firstWhere(
+                                (i) => i.id == _incident.id,
+                                orElse: () => _incident,
+                              );
+                              widget.onStatusUpdated?.call(updated);
                               ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(content: Text('Laporan tidak ditemukan.')),
-                              );
-                              return;
-                            }
-                            final updated = allIncidents.firstWhere(
-                              (i) => i.id == _incident.id,
-                              orElse: () => _incident,
-                            );
-                            widget.onStatusUpdated?.call(updated);
-                            ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Status ${_incident.id} diubah ke "$status".',
+                                SnackBar(
+                                  content: Text(
+                                    'Status ${_incident.id} diubah ke "$status".',
+                                  ),
                                 ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(50),
+                              side: BorderSide(
+                                color: isActive ? const Color(0xFF111827) : const Color(0xFFE5E7EB),
                               ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                            side: const BorderSide(color: Color(0xFFE5E7EB)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              foregroundColor: const Color(0xFF111827),
                             ),
-                            foregroundColor: const Color(0xFF111827),
-                          ),
-                          child: Row(
+                          child: isActive
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF111827),
+                                  ),
+                                )
+                              : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
@@ -1308,7 +1380,8 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                           ),
                         ),
                       ),
-                    )),
+                    );
+                  }),
                     const SizedBox(height: 8),
                     Text(
                       isResolving ? 'Catatan pekerjaan (wajib diisi)' : 'Catatan pekerjaan (opsional)',
@@ -1537,6 +1610,149 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NotesSheet extends StatefulWidget {
+  final Incident incident;
+  final ValueChanged<Incident> onSaved;
+
+  const _NotesSheet({required this.incident, required this.onSaved});
+
+  @override
+  State<_NotesSheet> createState() => _NotesSheetState();
+}
+
+class _NotesSheetState extends State<_NotesSheet> {
+  final _noteController = TextEditingController();
+  final _repo = IncidentRepository();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E7EB),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Tambah Catatan',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF111827),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tambahkan catatan pekerjaan tanpa mengubah status.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _noteController,
+              maxLines: 4,
+              maxLength: 300,
+              decoration: InputDecoration(
+                hintText: 'Tulis catatan di sini...',
+                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                filled: true,
+                fillColor: const Color(0xFFF9FAFB),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF111827),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Simpan Catatan'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final note = _noteController.text.trim();
+    if (note.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Catatan tidak boleh kosong.')),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    final ok = await _repo.updateStatus(
+      widget.incident.id,
+      widget.incident.status,
+      notes: note,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Laporan tidak ditemukan.')),
+      );
+      return;
+    }
+    final updated = allIncidents.firstWhere(
+      (i) => i.id == widget.incident.id,
+      orElse: () => widget.incident,
+    );
+    widget.onSaved(updated);
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Catatan berhasil disimpan.')),
     );
   }
 }

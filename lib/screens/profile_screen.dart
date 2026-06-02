@@ -29,10 +29,21 @@ class _ProfileBodyState extends State<_ProfileBody> {
   bool _notificationsEnabled = true;
   final _incidentRepo = IncidentRepository();
 
+  static const _roleStyles = {
+    'Student': (Color(0xFFEFF6FF), Color(0xFF3B82F6)),
+    'Staff': (Color(0xFFD1FAE5), Color(0xFF10B981)),
+    'Facility Admin': (Color(0xFFFFEDD5), Color(0xFFF97316)),
+    'Super Admin': (Color(0xFFF3E8FF), Color(0xFF8B5CF6)),
+  };
+
+  static (Color bg, Color fg) _roleStyle(String role) =>
+      _roleStyles[role] ?? (const Color(0xFFF3F4F6), const Color(0xFF6B7280));
+
   int _totalIncidents = 0;
   int _activeIncidents = 0;
   int _completedIncidents = 0;
   int _inProgressTasks = 0;
+  int _overdueTasks = 0;
   bool _isLoadingStats = true;
   bool _isStaff = false;
 
@@ -50,7 +61,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
       setState(() {
         _totalIncidents = tasks.length;
         _inProgressTasks = tasks.where((t) => t.status == statusInProgress).length;
-        _completedIncidents = tasks.where((t) => t.status == statusResolved || t.status == statusClosed).length;
+        _overdueTasks = tasks.where((t) => t.isOverdue()).length;
         _isLoadingStats = false;
       });
     } else {
@@ -157,9 +168,12 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: _loadStats,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -185,11 +199,13 @@ class _ProfileBodyState extends State<_ProfileBody> {
           _buildDangerSection(context),
         ],
       ),
+    ),
     );
   }
 
   Widget _buildProfileHeader() {
     final user = _isStaff ? staffUser : currentUser;
+    final style = _roleStyle(user.role);
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -226,15 +242,15 @@ class _ProfileBodyState extends State<_ProfileBody> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: style.$1,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         user.role,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1D4ED8),
+                          color: style.$2,
                         ),
                       ),
                     ),
@@ -294,7 +310,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-                'Selesai', _completedIncidents.toString(), Icons.check_circle_outline),
+                'Terlambat', _overdueTasks.toString(), Icons.warning_amber_outlined),
           ),
         ],
       );
