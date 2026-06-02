@@ -8,4 +8,16 @@ class User {
     required this.role,
     required this.email,
   });
+
+  User copyWith({
+    String? name,
+    String? role,
+    String? email,
+  }) {
+    return User(
+      name: name ?? this.name,
+      role: role ?? this.role,
+      email: email ?? this.email,
+    );
+  }
 }

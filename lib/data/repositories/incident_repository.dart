@@ -37,11 +37,15 @@ class IncidentRepository {
     String id,
     String newStatus, {
     String? notes,
+    String? assignedTo,
   }) async {
     await Future.delayed(const Duration(milliseconds: 100));
     final index = allIncidents.indexWhere((i) => i.id == id);
     if (index == -1) return false;
-    allIncidents[index] = allIncidents[index].copyWith(status: newStatus);
+    allIncidents[index] = allIncidents[index].copyWith(
+      status: newStatus,
+      assignedTo: assignedTo,
+    );
     if (notes != null && notes.trim().isNotEmpty) {
       _notes.putIfAbsent(id, () => []).add(notes.trim());
     }

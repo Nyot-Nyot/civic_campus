@@ -349,6 +349,23 @@ const staffUser = User(
   email: 'budi.teknisi@campus.id',
 );
 
+const superAdminUser = User(
+  name: 'Admin Utama',
+  role: 'Super Admin',
+  email: 'super.admin@campus.id',
+);
+
+final allUsers = <User>[
+  currentUser,
+  staffUser,
+  const User(
+    name: 'Dewi Admin',
+    role: 'Facility Admin',
+    email: 'dewi.admin@campus.id',
+  ),
+  superAdminUser,
+];
+
 const appName = 'CIVIC Campus';
 const appVersion = '1.0.0';
 const appCopyright = '© 2026 CIVIC Campus';

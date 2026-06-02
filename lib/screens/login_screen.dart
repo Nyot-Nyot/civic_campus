@@ -2,6 +2,7 @@ import 'package:civic_campus/app_messenger.dart';
 import 'package:civic_campus/screens/admin_home_screen.dart';
 import 'package:civic_campus/screens/staff_home_screen.dart';
 import 'package:civic_campus/screens/student_home_screen.dart';
+import 'package:civic_campus/screens/super_admin_home_screen.dart';
 import 'package:civic_campus/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -244,12 +245,13 @@ class _RoleButton extends StatelessWidget {
     switch (label) {
       case 'Staff':
         navigator.pushReplacementNamed(StaffHomeScreen.routeName);
+        return;
       case 'Facility Admin':
         navigator.pushReplacementNamed(AdminHomeScreen.routeName);
+        return;
       case 'Super Admin':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login cepat $label — mockup dummy.')),
-        );
+        navigator.pushReplacementNamed(SuperAdminHomeScreen.routeName);
+        return;
       default:
         navigator.pushReplacementNamed(StudentHomeScreen.routeName);
     }

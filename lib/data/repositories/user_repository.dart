@@ -6,4 +6,30 @@ class UserRepository {
     await Future.delayed(const Duration(milliseconds: 100));
     return currentUser;
   }
+
+  Future<List<User>> getAllUsers() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return List.unmodifiable(allUsers);
+  }
+
+  Future<void> addUser(User user) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    allUsers.add(user);
+  }
+
+  Future<bool> updateUser(String email, User updated) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = allUsers.indexWhere((u) => u.email == email);
+    if (index == -1) return false;
+    allUsers[index] = updated;
+    return true;
+  }
+
+  Future<bool> deleteUser(String email) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = allUsers.indexWhere((u) => u.email == email);
+    if (index == -1) return false;
+    allUsers.removeAt(index);
+    return true;
+  }
 }

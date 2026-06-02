@@ -163,22 +163,19 @@ void main() {
     expect(find.byType(LoginScreen), findsNothing);
   });
 
-  testWidgets('Role button "Super Admin" shows snackbar and stays on LoginScreen', (
-    WidgetTester tester,
+  testWidgets('Role button "Super Admin" navigates to SuperAdminHomeScreen', (
+    tester,
   ) async {
     await tester.pumpWidget(const CivicCampusApp());
-    await tester.pump(
-      SplashScreen.duration + const Duration(milliseconds: 100),
-    );
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Super Admin'));
     await tester.pumpAndSettle();
+
     await tester.tap(find.widgetWithText(ElevatedButton, 'Super Admin'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Login cepat Super Admin — mockup dummy.'), findsOneWidget);
+    expect(find.text('Pengguna Terdaftar'), findsOneWidget);
   });
 
   testWidgets('StudentHomeScreen CTA opens NewReportScreen', (
