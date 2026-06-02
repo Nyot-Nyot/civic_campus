@@ -1,7 +1,9 @@
 import 'package:civic_campus/app.dart';
+import 'package:civic_campus/screens/admin_home_screen.dart';
 import 'package:civic_campus/screens/login_screen.dart';
 import 'package:civic_campus/screens/new_report_screen.dart';
 import 'package:civic_campus/screens/splash_screen.dart';
+import 'package:civic_campus/screens/staff_home_screen.dart';
 import 'package:civic_campus/screens/student_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -105,6 +107,78 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Email wajib diisi'), findsOneWidget);
     expect(find.text('Kata sandi wajib diisi'), findsOneWidget);
+  });
+
+  testWidgets('Role button "Student" navigates to StudentHomeScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pump(
+      SplashScreen.duration + const Duration(milliseconds: 100),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Student'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Student'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StudentHomeScreen), findsOneWidget);
+    expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  testWidgets('Role button "Staff" navigates to StaffHomeScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pump(
+      SplashScreen.duration + const Duration(milliseconds: 100),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Staff'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Staff'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StaffHomeScreen), findsOneWidget);
+    expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  testWidgets('Role button "Facility Admin" navigates to AdminHomeScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pump(
+      SplashScreen.duration + const Duration(milliseconds: 100),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Facility Admin'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Facility Admin'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AdminHomeScreen), findsOneWidget);
+    expect(find.byType(LoginScreen), findsNothing);
+  });
+
+  testWidgets('Role button "Super Admin" shows snackbar and stays on LoginScreen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pump(
+      SplashScreen.duration + const Duration(milliseconds: 100),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Super Admin'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Super Admin'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Login cepat Super Admin — mockup dummy.'), findsOneWidget);
   });
 
   testWidgets('StudentHomeScreen CTA opens NewReportScreen', (
