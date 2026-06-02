@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_messenger.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/staff_home_screen.dart';
 import 'screens/student_home_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -21,6 +22,7 @@ class CivicCampusApp extends StatelessWidget {
         SplashScreen.routeName: (context) => const SplashScreen(),
         LoginScreen.routeName: (context) => const LoginScreen(),
         StudentHomeScreen.routeName: (context) => const StudentHomeScreen(),
+        StaffHomeScreen.routeName: (context) => const StaffHomeScreen(),
       },
     );
   }

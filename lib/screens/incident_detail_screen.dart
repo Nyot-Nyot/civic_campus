@@ -5,14 +5,22 @@ import '../data/dummy_data.dart';
 
 class IncidentDetailScreen extends StatelessWidget {
   final Incident incident;
+  final bool showStaffActions;
 
-  const IncidentDetailScreen({super.key, required this.incident});
+  const IncidentDetailScreen({
+    super.key,
+    required this.incident,
+    this.showStaffActions = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: _IncidentDetailBody(incident: incident),
+        child: _IncidentDetailBody(
+          incident: incident,
+          showStaffActions: showStaffActions,
+        ),
       ),
     );
   }
@@ -20,8 +28,12 @@ class IncidentDetailScreen extends StatelessWidget {
 
 class _IncidentDetailBody extends StatelessWidget {
   final Incident incident;
+  final bool showStaffActions;
 
-  const _IncidentDetailBody({required this.incident});
+  const _IncidentDetailBody({
+    required this.incident,
+    this.showStaffActions = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +197,7 @@ class _IncidentDetailBody extends StatelessWidget {
               const SizedBox(height: 14),
               _buildPhotoGrid(),
               const SizedBox(height: 28),
-              _buildActions(context),
+              _buildActions(context, showStaffActions),
               const SizedBox(height: 16),
             ]),
           ),
@@ -360,12 +372,38 @@ class _IncidentDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _buildActions(BuildContext context) {
+  Widget _buildActions(BuildContext context, bool isStaff) {
     final isResolvedOrClosed =
         incident.status == 'Resolved' || incident.status == 'Closed';
 
+    final currentIdx = statusFlow.indexOf(incident.status);
+    final nextStatuses = <String>[];
+    if (currentIdx < statusFlow.length - 1 && isStaff) {
+      for (var i = currentIdx + 1; i < statusFlow.length; i++) {
+        nextStatuses.add(statusFlow[i]);
+      }
+    }
+
     return Column(
       children: [
+        if (isStaff && nextStatuses.isNotEmpty) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showStatusUpdateSheet(context, nextStatuses),
+              icon: const Icon(Icons.update, size: 20),
+              label: const Text('Update Status'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: const Color(0xFF111827),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -534,5 +572,94 @@ class _IncidentDetailBody extends StatelessWidget {
         );
       },
     ).whenComplete(() => reasonController.dispose());
+  }
+
+  void _showStatusUpdateSheet(BuildContext context, List<String> nextStatuses) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Update Status',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ubah status laporan ${incident.id} ke status berikutnya:',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...nextStatuses.map((status) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Status ${incident.id} diubah ke "$status".',
+                            ),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        foregroundColor: const Color(0xFF111827),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: statusColors[status] ?? const Color(0xFF6B7280),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(status),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

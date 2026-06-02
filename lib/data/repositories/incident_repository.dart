@@ -25,4 +25,9 @@ class IncidentRepository {
         .where((i) => i.status == 'Resolved' || i.status == 'Closed')
         .toList();
   }
+
+  Future<List<Incident>> getAssignedTo(String staffName) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return allIncidents.where((i) => i.assignedTo == staffName).toList();
+  }
 }

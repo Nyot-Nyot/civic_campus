@@ -8,6 +8,7 @@ class Incident {
   final int photoCount;
   final int confirmationCount;
   final String description;
+  final String? assignedTo;
 
   const Incident({
     required this.id,
@@ -19,5 +20,6 @@ class Incident {
     this.photoCount = 1,
     this.confirmationCount = 0,
     this.description = '',
+    this.assignedTo,
   });
 }

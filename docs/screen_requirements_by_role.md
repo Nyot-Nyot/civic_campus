@@ -96,28 +96,29 @@ Alur report linear yang harus mencakup:
 
 ## 5. Maintenance Staff Screens
 
-Maintenance staff butuh fokus pada daftar tugas, lokasi, dan update progress.
+Maintenance staff butuh fokus pada daftar tugas, notifikasi assignment, dan update progress.
 
-### 5.1 Staff Task List Screen
+### 5.1 Staff Task List (Tugas Saya)
 - Daftar incident yang ditugaskan ke staff.
 - Kartu tugas menampilkan prioritas, kategori, lokasi, status, dan thumbnail bukti.
 - Filter / sort minimal berdasarkan status atau overdue.
+- Tap kartu → Staff Task Detail dengan staff actions.
 
-### 5.2 Assigned Incidents Screen
-- List all assigned incidents.
-- Kemungkinan switch antara `Active`, `In Progress`, dan `Resolved`.
-
-### 5.3 Staff Task Detail Screen
+### 5.2 Staff Task Detail Screen
 - Detail incident yang ditugaskan.
 - Foto besar, lokasi, kategori, deskripsi, dan link report.
 - Timeline singkat.
 - Note pekerjaan dan checklist kerja.
 - Tombol sticky untuk update status: `Mulai Kerjakan`, `Selesai`, atau `Tambah Catatan`.
 
-### 5.4 Status Update / Completion Screen
+### 5.3 Status Update / Completion Screen
 - Form sederhana untuk mengubah status ke `In Progress` / `Resolved`.
 - Input catatan kerja.
 - Upload bukti penyelesaian jika diperlukan.
+
+### 5.4 Staff Notifications
+- Notifikasi assignment baru, perubahan status, dan reopen request.
+- Reuse NotificationScreen yang sama dengan student.
 
 ### 5.5 Staff Profile / Workload Screen
 - Informasi akun staff.
@@ -193,7 +194,7 @@ Super Admin mengelola sistem dan user, serta dapat melihat overview global.
 
 ### 8.1 Role-Based Bottom Navigation Dock
 - Student: Home, New Report, My Incidents, Profile.
-- Staff: Tasks, Incidents, Profile.
+- Staff: Tugas Saya, Notifications, Profile.
 - Admin: Overview, Incidents, Staff Workload, Users.
 - Super Admin: Overview, Incidents, System Config, Users, Profile.
 

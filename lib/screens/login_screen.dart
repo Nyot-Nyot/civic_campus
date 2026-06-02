@@ -1,4 +1,5 @@
 import 'package:civic_campus/app_messenger.dart';
+import 'package:civic_campus/screens/staff_home_screen.dart';
 import 'package:civic_campus/screens/student_home_screen.dart';
 import 'package:civic_campus/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
@@ -237,15 +238,26 @@ class _RoleButton extends StatelessWidget {
 
   const _RoleButton({required this.label});
 
+  void _onTap(BuildContext context) {
+    final navigator = Navigator.of(context);
+    switch (label) {
+      case 'Staff':
+        navigator.pushReplacementNamed(StaffHomeScreen.routeName);
+      case 'Facility Admin':
+      case 'Super Admin':
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login cepat $label — mockup dummy.')),
+        );
+      default:
+        navigator.pushReplacementNamed(StudentHomeScreen.routeName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: CivicCampusTheme.roleButtonStyle,
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login cepat $label — mockup dummy.')),
-        );
-      },
+      onPressed: () => _onTap(context),
       child: Text(label),
     );
   }

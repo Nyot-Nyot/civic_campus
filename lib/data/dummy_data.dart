@@ -23,6 +23,7 @@ const allIncidents = <Incident>[
     confirmationCount: 3,
     description:
         'AC tidak mengeluarkan udara dingin sejak pagi, remote tidak berfungsi.',
+    assignedTo: 'Budi Teknisi',
   ),
   Incident(
     id: 'INC-002',
@@ -44,6 +45,7 @@ const allIncidents = <Incident>[
     timeAgo: '2 hari lalu',
     photoCount: 1,
     confirmationCount: 1,
+    assignedTo: 'Budi Teknisi',
   ),
   Incident(
     id: 'INC-004',
@@ -54,6 +56,7 @@ const allIncidents = <Incident>[
     timeAgo: '3 hari lalu',
     photoCount: 3,
     confirmationCount: 2,
+    assignedTo: 'Budi Teknisi',
   ),
   Incident(
     id: 'INC-005',
@@ -84,6 +87,7 @@ const allIncidents = <Incident>[
     timeAgo: '6 jam lalu',
     photoCount: 2,
     confirmationCount: 4,
+    assignedTo: 'Budi Teknisi',
   ),
   Incident(
     id: 'INC-008',
@@ -309,6 +313,12 @@ const currentUser = User(
   name: 'Andi Mahasiswa',
   role: 'Student',
   email: 'andi.mahasiswa@campus.id',
+);
+
+const staffUser = User(
+  name: 'Budi Teknisi',
+  role: 'Staff',
+  email: 'budi.teknisi@campus.id',
 );
 
 const appName = 'CIVIC Campus';
