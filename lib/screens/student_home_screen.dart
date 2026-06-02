@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
-import '../data/dummy_data.dart';
 import '../data/repositories/incident_repository.dart';
 import '../data/repositories/notification_repository.dart';
 import 'incident_detail_screen.dart';
@@ -9,6 +8,7 @@ import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
+import 'student/tabs/home_tab.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   static const routeName = '/student-home';
@@ -42,8 +42,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     Icons.person,
   ];
 
-  static const _categories = homeCategoryNames;
-
   @override
   void initState() {
     super.initState();
@@ -66,325 +64,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     }
   }
 
-  void _onCategoryChipTap(BuildContext context, String category) {
-    String? initialCategory;
-    if (category == 'Toilet' || category == 'WiFi') {
-      initialCategory = category;
-    }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => NewReportScreen(initialCategory: initialCategory),
-      ),
-    );
-  }
-
-  Widget _buildHomeTab(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Halo, Mahasiswa',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Lihat status laporan atau laporkan masalah baru dari sini.',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 16,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Stack(
-                    children: [
-                      IconButton(
-                        tooltip: 'Notifikasi',
-                        icon: const Icon(Icons.notifications_outlined,
-                            color: Colors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFF111827),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                          minimumSize: const Size(52, 52),
-                        ),
-                        onPressed: () async {
-                          final unread = await Navigator.of(context).push<int>(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const NotificationScreen(),
-                            ),
-                          );
-                          if (!mounted) return;
-                          setState(() => _unreadNotificationCount = unread ?? 0);
-                        },
-                      ),
-                      if (_unreadNotificationCount > 0)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Card(
-                margin: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Butuh laporan cepat?',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Laporkan masalah fasilitas kampus dengan foto dan lokasi cepat.',
-                        style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 15,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const NewReportScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text('Laporkan Masalah'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Kategori populer',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 40,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categories.length,
-                  separatorBuilder: (context, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    return ActionChip(
-                      label: Text(_categories[index]),
-                      onPressed: () => _onCategoryChipTap(context, _categories[index]),
-                      backgroundColor: const Color(0xFFF3F4F6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Laporan aktif saya',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 14),
-            ]),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          sliver: _isLoading
-              ? const SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                )
-              : _activeIncidents.isEmpty
-                  ? const SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: Text(
-                            'Tidak ada laporan aktif.',
-                            style: TextStyle(
-                              color: Color(0xFF9CA3AF),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final item = _activeIncidents[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: index == _activeIncidents.length - 1 ? 0 : 14,
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(24),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        IncidentDetailScreen(incident: item),
-                                  ),
-                                );
-                              },
-                              child: Card(
-                                margin: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.title,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              item.location,
-                                              style: const TextStyle(
-                                                color: Color(0xFF6B7280),
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: statusBgColors[
-                                                            item.status] ??
-                                                        const Color(0xFFEFF6FF),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            14),
-                                                  ),
-                                                  child: Text(
-                                                    item.status,
-                                                    style: TextStyle(
-                                                      color: statusColors[
-                                                              item.status] ??
-                                                          const Color(0xFF1D4ED8),
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Text(
-                                                  item.timeAgo,
-                                                  style: const TextStyle(
-                                                    color: Color(0xFF9CA3AF),
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: (categoryColors[
-                                                      item.category] ??
-                                                  const Color(0xFF3B82F6))
-                                              .withValues(alpha: 0.12),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          categoryIcons[item.category] ??
-                                              Icons.report_problem,
-                                          color: categoryColors[
-                                                  item.category] ??
-                                              const Color(0xFF3B82F6),
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }, childCount: _activeIncidents.length),
-                    ),
-        ),
-      ],
-    ),
-    );
-  }
-
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
       case 2:
@@ -392,7 +71,31 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       case 3:
         return const ProfileScreen();
       default:
-        return _buildHomeTab(context);
+        return StudentHomeTab(
+          isLoading: _isLoading,
+          activeIncidents: _activeIncidents,
+          unreadNotificationCount: _unreadNotificationCount,
+          onRefresh: _loadData,
+          onNewReport: ({initialCategory}) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NewReportScreen(initialCategory: initialCategory),
+              ),
+            );
+          },
+          onOpenNotification: () {
+            Navigator.of(context).push<int>(
+              MaterialPageRoute(builder: (context) => const NotificationScreen()),
+            ).then((unread) {
+              if (mounted) setState(() => _unreadNotificationCount = unread ?? 0);
+            });
+          },
+          onIncidentTap: (incident) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => IncidentDetailScreen(incident: incident)),
+            );
+          },
+        );
     }
   }
 

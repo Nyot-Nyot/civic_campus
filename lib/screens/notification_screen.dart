@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/models/notification.dart';
 import '../data/repositories/incident_repository.dart';
 import '../data/repositories/notification_repository.dart';
+import '../widgets/state_views.dart';
 import 'incident_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -163,7 +164,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const LoadingView()
                   : _notifications.isEmpty
                       ? const Center(
                       child: Column(

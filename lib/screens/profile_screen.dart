@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../data/models/incident.dart';
 import '../data/dummy_data.dart';
 import '../data/repositories/incident_repository.dart';
+import '../widgets/logout_sheet.dart';
+import '../widgets/state_views.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -81,88 +83,12 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   void _confirmLogout(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+    LogoutSheet.show(
+      context,
+      () => Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
       ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Icon(Icons.logout, size: 40, color: Color(0xFFEF4444)),
-                const SizedBox(height: 16),
-                const Text(
-                  'Keluar Akun',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Apakah Anda yakin ingin keluar?',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                          foregroundColor: const Color(0xFF111827),
-                        ),
-                        child: const Text('Batal'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(sheetContext).pop();
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                            (route) => false,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50),
-                          backgroundColor: const Color(0xFFEF4444),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(28),
-                          ),
-                        ),
-                        child: const Text('Keluar'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -273,26 +199,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   Widget _buildStatsRow() {
     if (_isLoadingStats) {
-      return Row(
-        children: List.generate(3, (_) => Expanded(
-          child: Card(
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-              child: Column(
-                children: const [
-                  SizedBox(
-                    width: 24, height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-        )),
-      );
+      return const SizedBox(height: 120, child: LoadingView());
     }
 
     if (_isStaff) {
