@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../data/dummy_data.dart';
+import '../data/constants/app_constants.dart';
 import 'student/steps/category_step.dart';
 import 'student/steps/description_step.dart';
 import 'student/steps/location_step.dart';
 import 'student/steps/photo_step.dart';
+import '../widgets/photo_picker_sheet.dart';
 import 'student/steps/review_step.dart';
 
 class NewReportScreen extends StatefulWidget {

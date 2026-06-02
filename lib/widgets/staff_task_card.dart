@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
-import '../data/dummy_data.dart';
+import '../data/constants/app_constants.dart';
 
 class StaffTaskCard extends StatelessWidget {
   final Incident incident;

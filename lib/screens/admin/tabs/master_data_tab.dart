@@ -5,6 +5,8 @@ import '../../../data/models/category.dart';
 import '../../../data/repositories/building_repository.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../widgets/state_views.dart';
+import 'master_data_building_sheet.dart';
+import 'master_data_category_sheet.dart';
 
 class AdminMasterDataTab extends StatefulWidget {
   const AdminMasterDataTab({super.key});
@@ -22,43 +24,7 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
   bool _hasError = false;
   int? _expandedBuilding;
 
-  static const _iconOptions = <IconData>[
-    Icons.ac_unit,
-    Icons.lightbulb_outline,
-    Icons.bolt,
-    Icons.videocam,
-    Icons.water_drop,
-    Icons.wc,
-    Icons.chair_outlined,
-    Icons.wifi,
-    Icons.cleaning_services,
-    Icons.construction,
-    Icons.electrical_services,
-    Icons.pets,
-    Icons.door_front_door_outlined,
-    Icons.window,
-    Icons.format_paint,
-    Icons.coffee,
-    Icons.fence,
-    Icons.roofing,
-    Icons.downhill_skiing,
-    Icons.sensor_door,
-  ];
 
-  static const _colorOptions = <Color>[
-    Color(0xFF3B82F6),
-    Color(0xFFFBBF24),
-    Color(0xFFF97316),
-    Color(0xFF8B5CF6),
-    Color(0xFF06B6D4),
-    Color(0xFF10B981),
-    Color(0xFFEC4899),
-    Color(0xFF6366F1),
-    Color(0xFF14B8A6),
-    Color(0xFFEF4444),
-    Color(0xFF78716C),
-    Color(0xFF1C1917),
-  ];
 
   @override
   void initState() {
@@ -117,364 +83,24 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
     }
   }
 
-  void _showBuildingSheet(BuildContext context, {int? index, Building? building}) {
-    final isEditing = building != null;
-    final nameController = TextEditingController(text: building?.name ?? '');
-    final floorNames = <TextEditingController>[];
-    final floorAreas = <TextEditingController>[];
-
-    if (isEditing) {
-      for (final f in building.floors) {
-        floorNames.add(TextEditingController(text: f.name));
-        floorAreas.add(TextEditingController(text: f.areas.join(', ')));
-      }
-    } else {
-      floorNames.add(TextEditingController());
-      floorAreas.add(TextEditingController());
-    }
-
-    showModalBottomSheet(
+  void _showBuildingSheet({int? index, Building? building}) {
+    showBuildingSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isEditing ? 'Edit Lokasi' : 'Tambah Lokasi',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Gedung',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Lantai',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          setSheetState(() {
-                            floorNames.add(TextEditingController());
-                            floorAreas.add(TextEditingController());
-                          });
-                        },
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Tambah Lantai'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF3B82F6),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          textStyle: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: List.generate(floorNames.length, (i) {
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: i == floorNames.length - 1 ? 0 : 10),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: floorNames[i],
-                                  decoration: InputDecoration(
-                                    labelText: 'Nama Lantai',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: TextField(
-                                  controller: floorAreas[i],
-                                  decoration: InputDecoration(
-                                    labelText: 'Ruangan (koma)',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              if (floorNames.length > 1)
-                                IconButton(
-                                  onPressed: () => setSheetState(() {
-                                    floorNames[i].dispose();
-                                    floorAreas[i].dispose();
-                                    floorNames.removeAt(i);
-                                    floorAreas.removeAt(i);
-                                  }),
-                                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                  color: const Color(0xFFEF4444),
-                                  visualDensity: VisualDensity.compact,
-                                )
-                              else
-                                const SizedBox(width: 48),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      if (isEditing)
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              await _buildingRepo.delete(index!);
-                              if (!mounted) return;
-                              Navigator.pop(ctx);
-                              _load();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFEF4444),
-                              side: const BorderSide(color: Color(0xFFEF4444)),
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                            ),
-                            child: const Text('Hapus'),
-                          ),
-                        ),
-                      if (isEditing) const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final name = nameController.text.trim();
-                            if (name.isEmpty) return;
-                            final floors = <Floor>[];
-                            for (var i = 0; i < floorNames.length; i++) {
-                              final fn = floorNames[i].text.trim();
-                              if (fn.isEmpty) continue;
-                              final areas = floorAreas[i].text
-                                  .split(',')
-                                  .map((e) => e.trim())
-                                  .where((e) => e.isNotEmpty)
-                                  .toList();
-                              floors.add(Floor(name: fn, areas: areas));
-                            }
-                            if (floors.isEmpty) return;
-                            final newBuilding = Building(name: name, floors: floors);
-                            if (isEditing) {
-                              await _buildingRepo.update(index!, newBuilding);
-                            } else {
-                              await _buildingRepo.add(newBuilding);
-                            }
-                            if (!mounted) return;
-                            Navigator.pop(ctx);
-                            _load();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF111827),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                          ),
-                          child: Text(isEditing ? 'Simpan' : 'Tambah'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      nameController.dispose();
-      for (final c in floorNames) { c.dispose(); }
-      for (final c in floorAreas) { c.dispose(); }
-    });
+      repository: _buildingRepo,
+      index: index,
+      building: building,
+      onDataChanged: _load,
+    );
   }
 
-  void _showCategorySheet(BuildContext context, {int? index, ReportCategory? category}) {
-    final isEditing = category != null;
-    final nameController = TextEditingController(text: category?.name ?? '');
-    var selectedIcon = category?.icon ?? _iconOptions.first;
-    var selectedColor = category?.color ?? _colorOptions.first;
-
-    showModalBottomSheet(
+  void _showCategorySheet({int? index, ReportCategory? category}) {
+    showCategorySheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isEditing ? 'Edit Kategori' : 'Tambah Kategori',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Kategori',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Ikon',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 100,
-                    child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 10,
-                        crossAxisSpacing: 6,
-                        mainAxisSpacing: 6,
-                      ),
-                      itemCount: _iconOptions.length,
-                      itemBuilder: (ctx, i) {
-                        final icon = _iconOptions[i];
-                        final isSelected = icon == selectedIcon;
-                        return GestureDetector(
-                          onTap: () => setSheetState(() => selectedIcon = icon),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? selectedColor.withValues(alpha: 0.15)
-                                  : const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(10),
-                              border: isSelected
-                                  ? Border.all(color: selectedColor, width: 2)
-                                  : null,
-                            ),
-                            child: Icon(icon, color: isSelected ? selectedColor : const Color(0xFF6B7280), size: 18),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Warna',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _colorOptions.map((c) {
-                      final isSelected = c == selectedColor;
-                      return GestureDetector(
-                        onTap: () => setSheetState(() => selectedColor = c),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: isSelected
-                                ? Border.all(color: Colors.white, width: 3)
-                                : null,
-                            boxShadow: isSelected
-                                ? [BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 6)]
-                                : null,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      if (isEditing)
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              await _categoryRepo.delete(index!);
-                              if (!mounted) return;
-                              Navigator.pop(ctx);
-                              _load();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFEF4444),
-                              side: const BorderSide(color: Color(0xFFEF4444)),
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                            ),
-                            child: const Text('Hapus'),
-                          ),
-                        ),
-                      if (isEditing) const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final name = nameController.text.trim();
-                            if (name.isEmpty) return;
-                            final newCat = ReportCategory(name: name, icon: selectedIcon, color: selectedColor);
-                            if (isEditing) {
-                              await _categoryRepo.update(index!, newCat);
-                            } else {
-                              await _categoryRepo.add(newCat);
-                            }
-                            if (!mounted) return;
-                            Navigator.pop(ctx);
-                            _load();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF111827),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                          ),
-                          child: Text(isEditing ? 'Simpan' : 'Tambah'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() => nameController.dispose());
+      repository: _categoryRepo,
+      index: index,
+      category: category,
+      onDataChanged: _load,
+    );
   }
 
   @override
@@ -500,7 +126,7 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
               const Spacer(),
               TextButton.icon(
-                onPressed: () => _showBuildingSheet(context),
+                onPressed: () => _showBuildingSheet(),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Tambah'),
                 style: TextButton.styleFrom(
@@ -585,7 +211,7 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
                         Row(
                           children: [
                             OutlinedButton.icon(
-                              onPressed: () => _showBuildingSheet(context, index: index, building: building),
+                              onPressed: () => _showBuildingSheet(index: index, building: building),
                               icon: const Icon(Icons.edit_outlined, size: 16),
                               label: const Text('Edit'),
                               style: OutlinedButton.styleFrom(
@@ -627,7 +253,7 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
               const Spacer(),
               TextButton.icon(
-                onPressed: () => _showCategorySheet(context),
+                onPressed: () => _showCategorySheet(),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Tambah'),
                 style: TextButton.styleFrom(
@@ -653,7 +279,7 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
             itemBuilder: (context, index) {
               final cat = _categories[index];
               return GestureDetector(
-                onTap: () => _showCategorySheet(context, index: index, category: cat),
+                onTap: () => _showCategorySheet(index: index, category: cat),
                 child: Container(
                   decoration: BoxDecoration(
                     color: cat.color.withValues(alpha: 0.08),
