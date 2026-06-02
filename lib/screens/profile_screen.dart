@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/models/incident.dart';
+import '../data/models/user.dart';
 import '../data/dummy_data.dart';
 import '../data/repositories/incident_repository.dart';
 import '../widgets/logout_sheet.dart';
@@ -8,20 +9,20 @@ import '../widgets/state_views.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final String? staffName;
+  final User? user;
 
-  const ProfileScreen({super.key, this.staffName});
+  const ProfileScreen({super.key, this.user});
 
   @override
   Widget build(BuildContext context) {
-    return _ProfileBody(staffName: staffName);
+    return _ProfileBody(user: user ?? currentUser);
   }
 }
 
 class _ProfileBody extends StatefulWidget {
-  final String? staffName;
+  final User user;
 
-  const _ProfileBody({this.staffName});
+  const _ProfileBody({required this.user});
 
   @override
   State<_ProfileBody> createState() => _ProfileBodyState();
@@ -47,18 +48,17 @@ class _ProfileBodyState extends State<_ProfileBody> {
   int _inProgressTasks = 0;
   int _overdueTasks = 0;
   bool _isLoadingStats = true;
-  bool _isStaff = false;
+  bool get _isStaff => widget.user.role == 'Staff';
 
   @override
   void initState() {
     super.initState();
-    _isStaff = widget.staffName != null;
     _loadStats();
   }
 
   Future<void> _loadStats() async {
     if (_isStaff) {
-      final tasks = await _incidentRepo.getAssignedTo(widget.staffName!);
+      final tasks = await _incidentRepo.getAssignedTo(widget.user.name);
       if (!mounted) return;
       setState(() {
         _totalIncidents = tasks.length;
@@ -130,7 +130,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   Widget _buildProfileHeader() {
-    final user = _isStaff ? staffUser : currentUser;
+    final user = widget.user;
     final style = _roleStyle(user.role);
     return Card(
       margin: EdgeInsets.zero,

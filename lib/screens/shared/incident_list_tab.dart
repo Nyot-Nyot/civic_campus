@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/incident.dart';
-import '../../../data/models/user.dart';
-import '../../../data/dummy_data.dart';
-import '../../../data/repositories/incident_repository.dart';
-import '../../../data/repositories/user_repository.dart';
-import '../../../widgets/admin_incident_card.dart';
-import '../../../widgets/filter_dropdown.dart';
-import '../../../widgets/state_views.dart';
-import '../../incident_detail_screen.dart';
+import '../../data/models/incident.dart';
+import '../../data/models/user.dart';
+import '../../data/dummy_data.dart';
+import '../../data/repositories/incident_repository.dart';
+import '../../data/repositories/user_repository.dart';
+import '../../widgets/admin_incident_card.dart';
+import '../../widgets/filter_dropdown.dart';
+import '../../widgets/state_views.dart';
+import '../incident_detail_screen.dart';
 
-class AdminIncidentListTab extends StatefulWidget {
+class SharedIncidentListTab extends StatefulWidget {
   final String initialStatusFilter;
   final String initialPriorityFilter;
 
-  const AdminIncidentListTab({
+  const SharedIncidentListTab({
     super.key,
     this.initialStatusFilter = 'Semua',
     this.initialPriorityFilter = 'Semua',
   });
 
   @override
-  State<AdminIncidentListTab> createState() => _AdminIncidentListTabState();
+  State<SharedIncidentListTab> createState() => _SharedIncidentListTabState();
 }
 
-class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
+class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
   final _repo = IncidentRepository();
   final _userRepo = UserRepository();
   List<Incident> _incidents = [];
@@ -76,7 +76,7 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
         _staffNames = users.where((u) => u.role == 'Staff').map((u) => u.name).toList();
       });
     } catch (e) {
-      debugPrint('AdminIncidentListTab._load error: $e');
+      debugPrint('SharedIncidentListTab._load error: $e');
       if (!mounted) return;
       setState(() => _hasError = true);
     } finally {
@@ -85,7 +85,7 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
   }
 
   @override
-  void didUpdateWidget(AdminIncidentListTab oldWidget) {
+  void didUpdateWidget(SharedIncidentListTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialStatusFilter != oldWidget.initialStatusFilter ||
         widget.initialPriorityFilter != oldWidget.initialPriorityFilter) {
@@ -147,15 +147,11 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Assign Staff',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                ),
+                const Text('Assign Staff',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
                 const SizedBox(height: 8),
-                Text(
-                  'Pilih staff untuk "${item.title}".',
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-                ),
+                Text('Pilih staff untuk "${item.title}".',
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
                 const SizedBox(height: 20),
                 ...List.generate(_staffNames.length, (idx) {
                   final name = _staffNames[idx];
@@ -166,10 +162,14 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
                       child: OutlinedButton.icon(
                         onPressed: () async {
                           Navigator.of(sheetContext).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Menugaskan ke $name...')),
+                          );
                           final ok = await _repo.updateStatus(
                             item.id,
                             statusAssigned,
                             notes: 'Ditugaskan ke $name',
+                            assignedTo: name,
                           );
                           if (!mounted) return;
                           if (!ok) {
@@ -177,14 +177,6 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
                               const SnackBar(content: Text('Laporan tidak ditemukan.')),
                             );
                             return;
-                          }
-                          final updated = item.copyWith(
-                            status: statusAssigned,
-                            assignedTo: name,
-                          );
-                          final idx2 = allIncidents.indexWhere((i) => i.id == item.id);
-                          if (idx2 != -1) {
-                            allIncidents[idx2] = updated;
                           }
                           _load();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -327,49 +319,49 @@ class _AdminIncidentListTabState extends State<AdminIncidentListTab> {
             sliver: _isLoading
                 ? const SliverLoadingView()
                 : _hasError
-                  ? SliverErrorView(message: 'Gagal memuat insiden.', onRetry: _load)
-                  : incidents.isEmpty
-                  ? SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 40),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.inbox_outlined, size: 56, color: Color(0xFFD1D5DB)),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Tidak ada insiden.',
-                              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final item = incidents[index];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: index == incidents.length - 1 ? 0 : 14),
-                          child: AdminIncidentCard(
-                            incident: item,
-                            onTap: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => IncidentDetailScreen(
-                                    incident: item,
-                                    showAdminActions: true,
+                    ? SliverErrorView(message: 'Gagal memuat insiden.', onRetry: _load)
+                    : incidents.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 40),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.inbox_outlined, size: 56, color: Color(0xFFD1D5DB)),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Tidak ada insiden.',
+                                    style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
                                   ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate((context, index) {
+                              final item = incidents[index];
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: index == incidents.length - 1 ? 0 : 14),
+                                child: AdminIncidentCard(
+                                  incident: item,
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => IncidentDetailScreen(
+                                          incident: item,
+                                          showAdminActions: true,
+                                        ),
+                                      ),
+                                    );
+                                    if (!mounted) return;
+                                    _load();
+                                  },
+                                  onAssign: item.status == statusOpen
+                                      ? () => _quickAssign(item)
+                                      : null,
                                 ),
                               );
-                              if (!mounted) return;
-                              _load();
-                            },
-                            onAssign: item.status == statusOpen
-                                ? () => _quickAssign(item)
-                                : null,
+                            }, childCount: incidents.length),
                           ),
-                        );
-                      }, childCount: incidents.length),
-                    ),
           ),
         ],
       ),

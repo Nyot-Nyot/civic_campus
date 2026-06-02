@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'login_screen.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/logout_sheet.dart';
 import 'admin/tabs/overview_tab.dart';
-import 'admin/tabs/incident_list_tab.dart';
+import 'shared/incident_list_tab.dart';
 import 'admin/tabs/staff_workload_tab.dart';
 import 'admin/tabs/master_data_tab.dart';
 
@@ -21,25 +22,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _incidentStatusFilter = 'Semua';
   String _incidentPriorityFilter = 'Semua';
 
-  static const _icons = <IconData>[
-    Icons.dashboard_outlined,
-    Icons.list_alt_outlined,
-    Icons.bar_chart_outlined,
-    Icons.business_outlined,
-  ];
-
-  static const _selectedIcons = <IconData>[
-    Icons.dashboard,
-    Icons.list_alt,
-    Icons.bar_chart,
-    Icons.business,
-  ];
-
-  static const _labels = [
-    'Overview',
-    'Daftar Insiden',
-    'Beban Kerja Staff',
-    'Master Data',
+  static const _navItems = [
+    AppBottomNavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Overview'),
+    AppBottomNavItem(icon: Icons.list_alt_outlined, selectedIcon: Icons.list_alt, label: 'Daftar Insiden'),
+    AppBottomNavItem(icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Beban Kerja Staff'),
+    AppBottomNavItem(icon: Icons.business_outlined, selectedIcon: Icons.business, label: 'Master Data'),
   ];
 
   void _onQuickAction(String statusFilter) {
@@ -85,66 +72,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            height: 78,
-            decoration: BoxDecoration(
-              color: const Color(0xFF111827),
-              borderRadius: BorderRadius.circular(42),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.18),
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(_icons.length, (index) {
-                final selected = _selectedIndex == index;
-                final icon = selected ? _selectedIcons[index] : _icons[index];
-                return Expanded(
-                  child: Tooltip(
-                    message: _labels[index],
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(34),
-                      onTap: () => setState(() => _selectedIndex = index),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Semantics(
-                          label: _labels[index],
-                          button: true,
-                          selected: selected,
-                          child: Center(
-                            child: Container(
-                              width: selected ? 60 : 44,
-                              height: selected ? 60 : 44,
-                              decoration: selected
-                                  ? const BoxDecoration(
-                                      color: Colors.white24,
-                                      shape: BoxShape.circle,
-                                    )
-                                  : null,
-                              child: Icon(
-                                icon,
-                                color: selected ? Colors.white : const Color(0xFF9CA3AF),
-                                size: selected ? 28 : 24,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
+      bottomNavigationBar: AppBottomNav(
+        selectedIndex: _selectedIndex,
+        items: _navItems,
+        onItemSelected: (index) => setState(() => _selectedIndex = index),
       ),
     );
   }
@@ -152,7 +83,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget _buildBody(BuildContext context) {
     switch (_selectedIndex) {
       case 0: return AdminOverviewTab(onQuickAction: _onQuickAction);
-      case 1: return AdminIncidentListTab(
+      case 1: return SharedIncidentListTab(
         key: ValueKey('$_incidentStatusFilter$_incidentPriorityFilter'),
         initialStatusFilter: _incidentStatusFilter,
         initialPriorityFilter: _incidentPriorityFilter,

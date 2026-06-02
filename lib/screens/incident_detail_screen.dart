@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../data/models/incident.dart';
 import '../data/repositories/incident_repository.dart';
 import '../data/dummy_data.dart';
+import '../widgets/incident_photo_grid.dart';
+import '../widgets/incident_timeline.dart';
+import '../widgets/notes_sheet.dart';
 
 class IncidentDetailScreen extends StatefulWidget {
   final Incident incident;
@@ -408,7 +411,7 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (sheetContext) {
-        return _NotesSheet(
+        return NotesSheet(
           incident: _incident,
           onSaved: (updated) {
             setState(() {});
@@ -577,7 +580,12 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildTimeline(),
+              IncidentTimeline(
+                currentStatus: _incident.status,
+                statusFlow: statusFlow,
+                statusColors: statusColors,
+                statusBgColors: statusBgColors,
+              ),
               const SizedBox(height: 28),
               const Text(
                 'Foto Bukti',
@@ -588,7 +596,7 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                 ),
               ),
               const SizedBox(height: 14),
-              _buildPhotoGrid(),
+              IncidentPhotoGrid(photoCount: _incident.photoCount),
               const SizedBox(height: 28),
               _buildActions(context, widget.showStaffActions || widget.showAdminActions),
               const SizedBox(height: 16),
@@ -752,146 +760,6 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTimeline() {
-    final currentIndex =
-        statusFlow.indexOf(_incident.status).clamp(0, statusFlow.length - 1);
-
-    return Column(
-      children: List.generate(statusFlow.length, (index) {
-        final status = statusFlow[index];
-        final isCompleted = index < currentIndex;
-        final isCurrent = index == currentIndex;
-        final isPending = index > currentIndex;
-
-        Color circleColor;
-        IconData? icon;
-        if (isCompleted) {
-          circleColor = const Color(0xFF047857);
-          icon = Icons.check;
-        } else if (isCurrent) {
-          circleColor = const Color(0xFF1D4ED8);
-          icon = Icons.circle;
-        } else {
-          circleColor = const Color(0xFFE5E7EB);
-          icon = null;
-        }
-
-        final statusColorStatus =
-            statusColors[status] ?? const Color(0xFF6B7280);
-        final statusBgStatus =
-            statusBgColors[status] ?? const Color(0xFFF3F4F6);
-
-        final connectorHeight = index < statusFlow.length - 1 ? 20.0 : 0.0;
-
-        return SizedBox(
-          height: 44,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 32,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: circleColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: icon != null
-                          ? Icon(icon, size: 8, color: Colors.white)
-                          : null,
-                    ),
-                    if (connectorHeight > 0)
-                      SizedBox(
-                        height: connectorHeight,
-                        child: Container(
-                          width: 2,
-                          color: isPending
-                              ? const Color(0xFFE5E7EB)
-                              : const Color(0xFF047857),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isCurrent ? statusBgStatus : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight:
-                        isCurrent ? FontWeight.w600 : FontWeight.w400,
-                    color: isCompleted
-                        ? const Color(0xFF047857)
-                        : isCurrent
-                            ? statusColorStatus
-                            : const Color(0xFF9CA3AF),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildPhotoGrid() {
-    if (_incident.photoCount == 0) {
-      return const Text(
-        'Tidak ada foto bukti.',
-        style: TextStyle(
-          fontSize: 14,
-          color: Color(0xFF9CA3AF),
-        ),
-      );
-    }
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      itemCount: _incident.photoCount,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.image_outlined,
-                  size: 28, color: Color(0xFFD1D5DB)),
-              SizedBox(height: 4),
-              Text(
-                'Foto',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF9CA3AF),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -1614,145 +1482,4 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
   }
 }
 
-class _NotesSheet extends StatefulWidget {
-  final Incident incident;
-  final ValueChanged<Incident> onSaved;
 
-  const _NotesSheet({required this.incident, required this.onSaved});
-
-  @override
-  State<_NotesSheet> createState() => _NotesSheetState();
-}
-
-class _NotesSheetState extends State<_NotesSheet> {
-  final _noteController = TextEditingController();
-  final _repo = IncidentRepository();
-  bool _isSaving = false;
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Tambah Catatan',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Tambahkan catatan pekerjaan tanpa mengubah status.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _noteController,
-              maxLines: 4,
-              maxLength: 300,
-              decoration: InputDecoration(
-                hintText: 'Tulis catatan di sini...',
-                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                filled: true,
-                fillColor: const Color(0xFFF9FAFB),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF111827),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Simpan Catatan'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _save() async {
-    final note = _noteController.text.trim();
-    if (note.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catatan tidak boleh kosong.')),
-      );
-      return;
-    }
-    setState(() => _isSaving = true);
-    final ok = await _repo.updateStatus(
-      widget.incident.id,
-      widget.incident.status,
-      notes: note,
-    );
-    if (!mounted) return;
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Laporan tidak ditemukan.')),
-      );
-      return;
-    }
-    final updated = allIncidents.firstWhere(
-      (i) => i.id == widget.incident.id,
-      orElse: () => widget.incident,
-    );
-    widget.onSaved(updated);
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Catatan berhasil disimpan.')),
-    );
-  }
-}

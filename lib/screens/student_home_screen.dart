@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/models/incident.dart';
 import '../data/repositories/incident_repository.dart';
 import '../data/repositories/notification_repository.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'incident_detail_screen.dart';
 import 'my_incidents_screen.dart';
 import 'new_report_screen.dart';
@@ -28,18 +29,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   final _incidentRepo = IncidentRepository();
   final _notificationRepo = NotificationRepository();
 
-  static const _bottomNavigationIcons = <IconData>[
-    Icons.home_outlined,
-    Icons.add_circle_outline,
-    Icons.description_outlined,
-    Icons.person_outline,
-  ];
-
-  static const _bottomNavigationSelectedIcons = <IconData>[
-    Icons.home,
-    Icons.add_circle,
-    Icons.description,
-    Icons.person,
+  static const _navItems = [
+    AppBottomNavItem(icon: Icons.home_outlined, selectedIcon: Icons.home),
+    AppBottomNavItem(icon: Icons.add_circle_outline, selectedIcon: Icons.add_circle),
+    AppBottomNavItem(icon: Icons.description_outlined, selectedIcon: Icons.description),
+    AppBottomNavItem(icon: Icons.person_outline, selectedIcon: Icons.person),
   ];
 
   @override
@@ -103,74 +97,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(child: _buildBody(context)),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            height: 78,
-            decoration: BoxDecoration(
-              color: const Color(0xFF111827),
-              borderRadius: BorderRadius.circular(42),
-              boxShadow: [
-                const BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.18),
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(_bottomNavigationIcons.length, (index) {
-                final selected = _selectedIndex == index;
-                final icon = selected
-                    ? _bottomNavigationSelectedIcons[index]
-                    : _bottomNavigationIcons[index];
-                return Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(34),
-                    onTap: () {
-                      if (index == 1) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const NewReportScreen(),
-                          ),
-                        );
-                      } else {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Center(
-                        child: Container(
-                          width: selected ? 60 : 44,
-                          height: selected ? 60 : 44,
-                          decoration: selected
-                              ? const BoxDecoration(
-                                  color: Colors.white24,
-                                  shape: BoxShape.circle,
-                                )
-                              : null,
-                          child: Icon(
-                            icon,
-                            color: selected
-                                ? Colors.white
-                                : const Color(0xFF9CA3AF),
-                            size: selected ? 28 : 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
+      bottomNavigationBar: AppBottomNav(
+        selectedIndex: _selectedIndex,
+        items: _navItems,
+        onItemSelected: (index) {
+          if (index == 1) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const NewReportScreen()),
+            );
+          } else {
+            setState(() => _selectedIndex = index);
+          }
+        },
       ),
     );
   }
