@@ -88,7 +88,7 @@ Navigasi bawah menggunakan komponen *Floating Bottom Navigation Dock* berwarna h
   * Overview (Ikon Dashboard/Metrik)
   * Incidents (Ikon List Insiden)
   * Staff Workload (Ikon Grafik Batang)
-  * Users (Ikon Kelompok User)
+  * Master Data (Ikon Database/Master Data)
 * **Navigasi Super Admin (Super Admin):**
   * Overview (Ikon Dashboard/Metrik)
   * Incidents (Ikon List Insiden)

@@ -149,8 +149,9 @@ Admin fokus pada incident handling, assignment, dan ringkasan operasional.
 ### 6.3 Incident Detail for Admin
 - Full context: lokasi, kategori, data laporan, linked reports, confirm count.
 - Timeline lengkap termasuk assignment history dan status changes.
-- Quick assignment panel / inline action.
-- Tombol `Assign`, `Reassign`, `Close`, `Reject`, `Request Info`, `Merge / Split`.
+- Quick assignment panel / inline action (tanpa perlu buka halaman detail).
+- Tombol `Assign`, `Reassign`, `Close`, `Reject`.
+- Note: `Request Info` dan `Merge / Split` tidak diimplementasi di MVP (butuh sistem notifikasi & data ops kompleks — Phase 2).
 
 ### 6.4 Quick Assignment / Action Panel
 - Modal atau popover untuk menugaskan staff tanpa pindah halaman.
@@ -180,12 +181,12 @@ Super Admin mengelola sistem dan user, serta dapat melihat overview global.
 - CRUD user, assign role, dan aktif / non-aktifkan.
 - Role matrix overview.
 
-### 7.3 System Config / Master Data Screen
-- Manajemen master data utama:
-  - locations,
-  - categories,
-  - optional assets,
-  - RBAC / role settings.
+### 7.3 System Config Screen
+- Manajemen konfigurasi sistem tingkat atas:
+  - RBAC / role settings dan permission overrides,
+  - system-wide defaults (SLA thresholds, scoring),
+  - audit trail konfigurasi.
+- Note: Operasional master data (locations, categories) dikelola oleh Facility Admin (6.5). Super Admin dapat melihat namun tidak perlu mengelola data operasional harian.
 
 ### 7.4 Audit Log / System Events Screen
 - Same as Admin audit log, plus perubahan sistem dan user management events.
@@ -195,7 +196,7 @@ Super Admin mengelola sistem dan user, serta dapat melihat overview global.
 ### 8.1 Role-Based Bottom Navigation Dock
 - Student: Home, New Report, My Incidents, Profile.
 - Staff: Tugas Saya, Notifications, Profile.
-- Admin: Overview, Incidents, Staff Workload, Users.
+- Admin: Overview, Incidents, Staff Workload, Master Data.
 - Super Admin: Overview, Incidents, System Config, Users, Profile.
 
 ### 8.2 Shared Modal / Flow Screens
@@ -213,7 +214,8 @@ Dari dokumen yang dibaca, layar berikut wajib ada untuk mencakup fungsionalitas 
 - incident detail dengan timeline,
 - staff task handling,
 - admin incident management dan quick assignment,
-- super admin user/master data management,
+- admin master data management (lokasi & kategori),
+- super admin user management & system config,
 - audit log dan reopen request.
 
 Jika ingin, langkah berikutnya adalah membuat mockup per role berdasarkan daftar ini sebelum masuk ke implementasi InsForge.

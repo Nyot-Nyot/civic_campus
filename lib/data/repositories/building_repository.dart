@@ -22,4 +22,23 @@ class BuildingRepository {
       return false;
     }).toList();
   }
+
+  Future<void> add(Building building) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    allBuildings.add(building);
+  }
+
+  Future<void> update(int index, Building building) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (index >= 0 && index < allBuildings.length) {
+      allBuildings[index] = building;
+    }
+  }
+
+  Future<void> delete(int index) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (index >= 0 && index < allBuildings.length) {
+      allBuildings.removeAt(index);
+    }
+  }
 }

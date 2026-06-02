@@ -642,8 +642,8 @@ Contoh:
 
 - Student hanya boleh membuat report dan confirmation.
 - Staff hanya update assignment miliknya.
-- Admin dapat assign dan close.
-- Super Admin dapat manage users and master data.
+- Admin dapat assign, close, dan manage operational master data (locations, categories).
+- Super Admin dapat manage users dan system configuration (RBAC, SLA defaults).
 
 ## 14.2 File Validation
 

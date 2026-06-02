@@ -7,11 +7,13 @@ import '../data/dummy_data.dart';
 class IncidentDetailScreen extends StatefulWidget {
   final Incident incident;
   final bool showStaffActions;
+  final bool showAdminActions;
 
   const IncidentDetailScreen({
     super.key,
     required this.incident,
     this.showStaffActions = false,
+    this.showAdminActions = false,
   });
 
   @override
@@ -30,6 +32,33 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   }
 
   Future<void> _handleStickyAction() async {
+    if (widget.showAdminActions) {
+      if (_incident.status == statusOpen || _incident.status == statusAssigned) {
+        _showAssignSheet();
+        return;
+      }
+      if (_incident.status == statusResolved) {
+        final ok = await _repo.updateStatus(_incident.id, statusClosed);
+        if (!mounted) return;
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Laporan tidak ditemukan.')),
+          );
+          return;
+        }
+        setState(() {
+          _incident = allIncidents.firstWhere(
+            (i) => i.id == _incident.id,
+            orElse: () => _incident,
+          );
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${_incident.id} ditutup.')),
+        );
+        return;
+      }
+      return;
+    }
     if (_incident.status == statusInProgress) {
       _bodyKey.currentState?.showResolveSheet(context);
       return;
@@ -43,7 +72,10 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       return;
     }
     setState(() {
-      _incident = allIncidents.firstWhere((i) => i.id == _incident.id);
+      _incident = allIncidents.firstWhere(
+        (i) => i.id == _incident.id,
+        orElse: () => _incident,
+      );
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -54,19 +86,216 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     );
   }
 
+  void _showAssignSheet() {
+    final isAssigned = _incident.status == statusAssigned;
+    final priorities = ['Tinggi', 'Sedang', 'Rendah'];
+    String selectedPriority = _incident.priority;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 16,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      isAssigned ? 'Tugaskan Ulang Staff' : 'Assign Staff',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Pilih staff yang akan menangani insiden ini.',
+                      style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          Navigator.of(sheetContext).pop();
+                          final notes = selectedPriority != _incident.priority
+                              ? 'Ditugaskan ke Budi Teknisi, prioritas: $selectedPriority'
+                              : 'Ditugaskan ke Budi Teknisi';
+                          final ok = await _repo.updateStatus(
+                            _incident.id,
+                            statusAssigned,
+                            notes: notes,
+                          );
+                          if (!mounted) return;
+                          if (!ok) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(content: Text('Laporan tidak ditemukan.')),
+                            );
+                            return;
+                          }
+                          final updated = _incident.copyWith(
+                            status: statusAssigned,
+                            assignedTo: 'Budi Teknisi',
+                            priority: selectedPriority,
+                          );
+                          final idx = allIncidents.indexWhere((i) => i.id == _incident.id);
+                          if (idx != -1) {
+                            allIncidents[idx] = updated;
+                          }
+                          setState(() => _incident = updated);
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(content: Text('Insiden ditugaskan ke Budi Teknisi.')),
+                          );
+                        },
+                        icon: const Icon(Icons.person_add, size: 20),
+                        label: const Text('Budi Teknisi'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          foregroundColor: const Color(0xFF111827),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Prioritas',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: List.generate(priorities.length, (index) {
+                        final p = priorities[index];
+                        final sel = selectedPriority == p;
+                        return Padding(
+                          padding: EdgeInsets.only(right: index < priorities.length - 1 ? 8 : 0),
+                          child: ChoiceChip(
+                            label: Text(p),
+                            selected: sel,
+                            onSelected: (_) => setSheetState(() => selectedPriority = p),
+                            labelStyle: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: sel ? Colors.white : const Color(0xFF6B7280),
+                            ),
+                            backgroundColor: const Color(0xFFF3F4F6),
+                            selectedColor: const Color(0xFF111827),
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Fitur due date akan tersedia setelah integrasi kalender.')),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(44),
+                          backgroundColor: const Color(0xFFF3F4F6),
+                          foregroundColor: const Color(0xFF374151),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.calendar_today, size: 16),
+                            SizedBox(width: 8),
+                            Text('Tambah Due Date (opsional)'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final prioColor =
-        priorityColors[_incident.priority] ?? const Color(0xFF6B7280);
+    bool showSticky;
+    String stickyLabel;
+    IconData stickyIcon;
+    Color stickyColor;
 
-    final showSticky = widget.showStaffActions &&
-        (_incident.status == statusAssigned || _incident.status == statusInProgress);
-    final stickyLabel = _incident.status == statusAssigned
-        ? 'Mulai Kerjakan'
-        : 'Selesaikan Tugas';
-    final stickyIcon = _incident.status == statusAssigned
-        ? Icons.play_arrow_rounded
-        : Icons.check_circle_outline;
+    if (widget.showAdminActions) {
+      showSticky = _incident.status == statusOpen ||
+          _incident.status == statusAssigned ||
+          _incident.status == statusResolved;
+      if (_incident.status == statusOpen) {
+        stickyLabel = 'Assign';
+        stickyIcon = Icons.person_add_alt_1;
+        stickyColor = const Color(0xFF3B82F6);
+      } else if (_incident.status == statusAssigned) {
+        stickyLabel = 'Tugaskan Ulang';
+        stickyIcon = Icons.swap_horiz;
+        stickyColor = const Color(0xFF3B82F6);
+      } else if (_incident.status == statusResolved) {
+        stickyLabel = 'Tutup Insiden';
+        stickyIcon = Icons.check_circle_outline;
+        stickyColor = const Color(0xFF10B981);
+      } else {
+        stickyLabel = '';
+        stickyIcon = Icons.error_outline;
+        stickyColor = const Color(0xFF6B7280);
+      }
+    } else {
+      showSticky = widget.showStaffActions &&
+          (_incident.status == statusAssigned || _incident.status == statusInProgress);
+      stickyLabel = _incident.status == statusAssigned
+          ? 'Mulai Kerjakan'
+          : 'Selesaikan Tugas';
+      stickyIcon = _incident.status == statusAssigned
+          ? Icons.play_arrow_rounded
+          : Icons.check_circle_outline;
+      stickyColor = _incident.status == statusInProgress
+          ? priorityColors[_incident.priority] ?? const Color(0xFF3B82F6)
+          : const Color(0xFF3B82F6);
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -74,6 +303,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
           key: _bodyKey,
           incident: _incident,
           showStaffActions: widget.showStaffActions,
+          showAdminActions: widget.showAdminActions,
           onStatusUpdated: (updated) {
             setState(() => _incident = updated);
           },
@@ -91,7 +321,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                     icon: Icon(stickyIcon, size: 20),
                     label: Text(stickyLabel),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: prioColor,
+                      backgroundColor: stickyColor,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
@@ -109,12 +339,14 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 class _IncidentDetailBody extends StatefulWidget {
   final Incident incident;
   final bool showStaffActions;
+  final bool showAdminActions;
   final ValueChanged<Incident>? onStatusUpdated;
 
   const _IncidentDetailBody({
     super.key,
     required this.incident,
     this.showStaffActions = false,
+    this.showAdminActions = false,
     this.onStatusUpdated,
   });
 
@@ -243,13 +475,20 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                 const SizedBox(height: 12),
                 _buildInfoRow(
                     Icons.access_time, 'Waktu', '${_incident.timeAgo} dilaporkan'),
-                if (_incident.confirmationCount > 0) ...[
-                  const SizedBox(height: 12),
-                  _buildInfoRow(Icons.people, 'Konfirmasi',
-                      '+${_incident.confirmationCount} orang'),
-                ],
                 const SizedBox(height: 12),
                 _buildPriorityRow(_incident.priority),
+                if (widget.showAdminActions) ...[
+                  const SizedBox(height: 20),
+                  _buildConfirmationSection(),
+                  const SizedBox(height: 20),
+                  _buildLinkedReportsSection(),
+                ] else ...[
+                  if (_incident.confirmationCount > 0) ...[
+                    const SizedBox(height: 12),
+                    _buildInfoRow(Icons.people, 'Konfirmasi',
+                        '+${_incident.confirmationCount} orang'),
+                  ],
+                ],
               const SizedBox(height: 28),
               const Text(
                 'Deskripsi',
@@ -295,11 +534,108 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
               const SizedBox(height: 14),
               _buildPhotoGrid(),
               const SizedBox(height: 28),
-              _buildActions(context, widget.showStaffActions),
+              _buildActions(context, widget.showStaffActions || widget.showAdminActions),
               const SizedBox(height: 16),
             ]),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildConfirmationSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.people, color: Color(0xFF3B82F6), size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_incident.confirmationCount} mahasiswa',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'mengonfirmasi insiden ini',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkedReportsSection() {
+    final dummyReports = [
+      'Andi M. — ${_incident.timeAgo}',
+      'Siti R. — ${_incident.timeAgo}',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Laporan Terkait',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF111827),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(dummyReports.length, (index) {
+          final r = dummyReports[index];
+          final isLast = index == dummyReports.length - 1;
+          return Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF9CA3AF),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    r,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -506,10 +842,12 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
   Widget _buildActions(BuildContext context, bool isStaff) {
     final isResolvedOrClosed =
         _incident.status == statusResolved || _incident.status == statusClosed;
+    final isAdmin = widget.showAdminActions;
+    final isTerminal = _incident.status == statusClosed;
 
     final currentIdx = statusFlow.indexOf(_incident.status);
     final nextStatuses = <String>[];
-    if (currentIdx < statusFlow.length - 1 && isStaff) {
+    if (currentIdx < statusFlow.length - 1 && (isStaff || isAdmin)) {
       for (var i = currentIdx + 1; i < statusFlow.length; i++) {
         nextStatuses.add(statusFlow[i]);
       }
@@ -517,7 +855,7 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
 
     return Column(
       children: [
-        if (isStaff && nextStatuses.isNotEmpty) ...[
+        if ((isStaff || isAdmin) && nextStatuses.isNotEmpty) ...[
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -535,28 +873,49 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
           ),
           const SizedBox(height: 14),
         ],
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Laporan dikonfirmasi. Terima kasih!'),
+        if (!isAdmin) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Laporan dikonfirmasi. Terima kasih!'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.how_to_reg, size: 20),
+              label: const Text('Konfirmasi Laporan Ini'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: const Color(0xFF111827),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
                 ),
-              );
-            },
-            icon: const Icon(Icons.how_to_reg, size: 20),
-            label: const Text('Konfirmasi Laporan Ini'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: const Color(0xFF111827),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
               ),
             ),
           ),
-        ),
-        if (isResolvedOrClosed) ...[
+        ],
+        if (isAdmin && !isTerminal) ...[
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showRejectSheet(context),
+              icon: const Icon(Icons.block, size: 20),
+              label: const Text('Tolak'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                side: const BorderSide(color: Color(0xFFEF4444)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                foregroundColor: const Color(0xFFEF4444),
+              ),
+            ),
+          ),
+        ],
+        if (isResolvedOrClosed && !isAdmin) ...[
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -578,6 +937,133 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
           ),
         ],
       ],
+    );
+  }
+
+  void _showRejectSheet(BuildContext context) {
+    final reasonController = TextEditingController();
+    final fromResolved = _incident.status == statusResolved;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Tolak Insiden',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  fromResolved
+                      ? 'Hasil kerja staff ditolak. Insiden akan kembali ke status Assigned untuk ditinjau ulang.'
+                      : 'Jelaskan alasan penolakan insiden ini.',
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 4,
+                  maxLength: 300,
+                  decoration: InputDecoration(
+                    hintText: 'Alasan penolakan...',
+                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (reasonController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          const SnackBar(content: Text('Alasan harus diisi.')),
+                        );
+                        return;
+                      }
+                      Navigator.of(sheetContext).pop();
+                      final newStatus = fromResolved ? statusAssigned : _incident.status;
+                      final ok = await _repo.updateStatus(
+                        _incident.id,
+                        newStatus,
+                        notes: 'Ditolak: ${reasonController.text.trim()}',
+                      );
+                      if (!mounted) return;
+                      if (!ok) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Laporan tidak ditemukan.')),
+                        );
+                        return;
+                      }
+                      final updated = allIncidents.firstWhere(
+                        (i) => i.id == _incident.id,
+                      );
+                      widget.onStatusUpdated?.call(updated);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            fromResolved
+                                ? 'Insiden dikembalikan ke Assigned.'
+                                : 'Insiden ditolak.',
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      backgroundColor: const Color(0xFFEF4444),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                    child: const Text('Tolak Insiden'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -779,16 +1265,17 @@ class _IncidentDetailBodyState extends State<_IncidentDetailBody> {
                             );
                             if (!mounted) return;
                             if (!ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(this.context).showSnackBar(
                                 const SnackBar(content: Text('Laporan tidak ditemukan.')),
                               );
                               return;
                             }
                             final updated = allIncidents.firstWhere(
                               (i) => i.id == _incident.id,
+                              orElse: () => _incident,
                             );
                             widget.onStatusUpdated?.call(updated);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(this.context).showSnackBar(
                               SnackBar(
                                 content: Text(
                                   'Status ${_incident.id} diubah ke "$status".',

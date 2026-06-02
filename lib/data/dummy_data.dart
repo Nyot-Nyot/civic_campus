@@ -249,7 +249,7 @@ final allNotifications = <NotificationItem>[
 // BUILDINGS
 // ---------------------------------------------------------------------------
 
-const allBuildings = <Building>[
+final allBuildings = <Building>[
   Building(
     name: 'Gedung A',
     floors: [
@@ -320,7 +320,7 @@ const allBuildings = <Building>[
 // CATEGORIES
 // ---------------------------------------------------------------------------
 
-const allReportCategories = <ReportCategory>[
+final allReportCategories = <ReportCategory>[
   ReportCategory(name: 'AC', icon: Icons.ac_unit, color: Color(0xFF3B82F6)),
   ReportCategory(name: 'Lampu', icon: Icons.lightbulb_outline, color: Color(0xFFFBBF24)),
   ReportCategory(name: 'Listrik', icon: Icons.bolt, color: Color(0xFFF97316)),
