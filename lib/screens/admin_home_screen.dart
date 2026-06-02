@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../data/models/incident.dart';
 import '../data/models/building.dart';
 import '../data/models/category.dart';
+import '../data/models/user.dart';
 import '../data/repositories/incident_repository.dart';
 import '../data/repositories/building_repository.dart';
 import '../data/repositories/category_repository.dart';
+import '../data/repositories/user_repository.dart';
 import '../data/dummy_data.dart';
 import 'incident_detail_screen.dart';
+import 'login_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   static const routeName = '/admin-home';
@@ -52,10 +55,109 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
   }
 
+  void _confirmLogout(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Icon(Icons.logout, size: 40, color: Color(0xFFEF4444)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Keluar Akun',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Apakah Anda yakin ingin keluar?',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                          foregroundColor: const Color(0xFF111827),
+                        ),
+                        child: const Text('Batal'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          backgroundColor: const Color(0xFFEF4444),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                        ),
+                        child: const Text('Keluar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _buildBody(context)),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            _buildBody(context),
+            Positioned(
+              top: 8,
+              right: 16,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  elevation: 0,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _confirmLogout(context),
+                    child: const Icon(Icons.logout, size: 20, color: Color(0xFF6B7280)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         child: Material(
@@ -155,6 +257,7 @@ class _OverviewTab extends StatefulWidget {
 class _OverviewTabState extends State<_OverviewTab> {
   final _repo = IncidentRepository();
   bool _isLoading = true;
+  bool _hasError = false;
 
   int _highPriorityCount = 0;
   int _openCount = 0;
@@ -168,13 +271,17 @@ class _OverviewTabState extends State<_OverviewTab> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
     try {
       final items = await _repo.getAll();
       if (!mounted) return;
       int high = 0, open = 0, overdue = 0;
       final staff = <String>{};
       for (final i in items) {
-        if (i.status == statusOpen) open++;
+        if (i.status == statusOpen && i.assignedTo == null) open++;
         if (i.isOverdue()) overdue++;
         if (i.priority == 'Tinggi' && i.status != statusClosed) high++;
         if (i.assignedTo != null &&
@@ -191,6 +298,8 @@ class _OverviewTabState extends State<_OverviewTab> {
       });
     } catch (e) {
       debugPrint('_OverviewTab._load error: $e');
+      if (!mounted) return;
+      setState(() => _hasError = true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -200,6 +309,24 @@ class _OverviewTabState extends State<_OverviewTab> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
+            const SizedBox(height: 16),
+            const Text(
+              'Gagal memuat overview.',
+              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _load, child: const Text('Coba lagi')),
+          ],
+        ),
+      );
     }
 
     return RefreshIndicator(
@@ -333,10 +460,15 @@ class _IncidentListTab extends StatefulWidget {
 
 class _IncidentListTabState extends State<_IncidentListTab> {
   final _repo = IncidentRepository();
+  final _userRepo = UserRepository();
   List<Incident> _incidents = [];
+  List<String> _staffNames = [];
   bool _isLoading = true;
+  bool _hasError = false;
   late String _activeFilter;
   late String _activePriorityFilter;
+  String _searchQuery = '';
+  String _staffFilter = 'Semua';
 
   final _filters = [
     'Semua', statusOpen, statusAssigned, statusInProgress, statusResolved, statusClosed,
@@ -344,7 +476,14 @@ class _IncidentListTabState extends State<_IncidentListTab> {
 
   static const _priorityFilters = ['Semua', 'Tinggi', 'Sedang', 'Rendah'];
 
-  final _allStaffNames = ['Budi Teknisi'];
+  static const _statusLabels = {
+    'Semua': 'Semua',
+    statusOpen: 'Menunggu Penanganan',
+    statusAssigned: 'Sudah Ditugaskan',
+    statusInProgress: 'Sedang Dikerjakan',
+    statusResolved: 'Selesai Dikerjakan',
+    statusClosed: 'Ditutup',
+  };
 
   @override
   void initState() {
@@ -355,12 +494,25 @@ class _IncidentListTabState extends State<_IncidentListTab> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
     try {
-      final items = await _repo.getAll();
+      final results = await Future.wait([
+        _repo.getAll(),
+        _userRepo.getAllUsers(),
+      ]);
       if (!mounted) return;
-      setState(() => _incidents = items);
+      final users = results[1] as List<User>;
+      setState(() {
+        _incidents = results[0] as List<Incident>;
+        _staffNames = users.where((u) => u.role == 'Staff').map((u) => u.name).toList();
+      });
     } catch (e) {
       debugPrint('_IncidentListTab._load error: $e');
+      if (!mounted) return;
+      setState(() => _hasError = true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -385,6 +537,17 @@ class _IncidentListTabState extends State<_IncidentListTab> {
     }
     if (_activePriorityFilter != 'Semua') {
       filtered = filtered.where((i) => i.priority == _activePriorityFilter).toList();
+    }
+    if (_staffFilter != 'Semua') {
+      filtered = filtered.where((i) => i.assignedTo == _staffFilter).toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((i) =>
+        i.title.toLowerCase().contains(q) ||
+        i.location.toLowerCase().contains(q) ||
+        i.description.toLowerCase().contains(q)
+      ).toList();
     }
     filtered.sort((a, b) {
       const rank = {'Tinggi': 0, 'Sedang': 1, 'Rendah': 2};
@@ -432,10 +595,10 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                   style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 20),
-                ...List.generate(_allStaffNames.length, (idx) {
-                  final name = _allStaffNames[idx];
+                ...List.generate(_staffNames.length, (idx) {
+                  final name = _staffNames[idx];
                   return Padding(
-                    padding: EdgeInsets.only(bottom: idx < _allStaffNames.length - 1 ? 10 : 0),
+                    padding: EdgeInsets.only(bottom: idx < _staffNames.length - 1 ? 10 : 0),
                     child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -495,6 +658,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
     return RefreshIndicator(
       onRefresh: _load,
       child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
@@ -519,125 +683,90 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
-                  height: 36,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _filters.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final f = _filters[index];
-                            final selected = _activeFilter == f;
-                            return ChoiceChip(
-                              label: Text(f),
-                              selected: selected,
-                              onSelected: (_) => setState(() => _activeFilter = f),
-                              labelStyle: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: selected
-                                    ? Colors.white
-                                    : const Color(0xFF6B7280),
-                              ),
-                              backgroundColor: const Color(0xFFF3F4F6),
-                              selectedColor: const Color(0xFF111827),
-                              side: BorderSide.none,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                            );
-                          },
-                        ),
+                  height: 42,
+                  child: TextField(
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    decoration: InputDecoration(
+                      hintText: 'Cari insiden...',
+                      hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF9CA3AF)),
+                      filled: true,
+                      fillColor: const Color(0xFFF9FAFB),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
-                      const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        onSelected: (v) => setState(() => _activePriorityFilter = v),
-                        initialValue: _activePriorityFilter,
-                        offset: const Offset(0, 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        itemBuilder: (ctx) => [
-                          for (final p in _priorityFilters)
-                            PopupMenuItem(
-                              value: p,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (p != 'Semua')
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      margin: const EdgeInsets.only(right: 10),
-                                      decoration: BoxDecoration(
-                                        color: p == 'Tinggi'
-                                            ? const Color(0xFFEF4444)
-                                            : p == 'Sedang'
-                                                ? const Color(0xFFFBBF24)
-                                                : const Color(0xFF10B981),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  Text(
-                                    p,
-                                    style: TextStyle(
-                                      fontWeight: _activePriorityFilter == p
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                        child: Container(
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFD1D5DB)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_activePriorityFilter != 'Semua')
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.only(right: 6),
-                                  decoration: BoxDecoration(
-                                    color: _activePriorityFilter == 'Tinggi'
-                                        ? const Color(0xFFEF4444)
-                                        : _activePriorityFilter == 'Sedang'
-                                            ? const Color(0xFFFBBF24)
-                                            : const Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              Text(
-                                _activePriorityFilter == 'Semua'
-                                    ? 'Prioritas'
-                                    : _activePriorityFilter,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF6B7280),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.arrow_drop_down, size: 18, color: Color(0xFF9CA3AF)),
-                            ],
-                          ),
-                        ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                       ),
-                    ],
+                    ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _filters.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final f = _filters[index];
+                      final selected = _activeFilter == f;
+                      return ChoiceChip(
+                        label: Text(_statusLabels[f] ?? f),
+                        selected: selected,
+                        onSelected: (_) => setState(() => _activeFilter = f),
+                        labelStyle: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: selected ? Colors.white : const Color(0xFF6B7280),
+                        ),
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        selectedColor: const Color(0xFF111827),
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FilterDropdown(
+                        label: 'Prioritas',
+                        value: _activePriorityFilter == 'Semua' ? null : _activePriorityFilter,
+                        items: _priorityFilters,
+                        icon: _activePriorityFilter == 'Semua'
+                            ? null
+                            : Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: priorityColors[_activePriorityFilter] ?? const Color(0xFF6B7280),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                        onSelected: (v) => setState(() => _activePriorityFilter = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (_staffNames.isNotEmpty)
+                      Expanded(
+                        child: _FilterDropdown(
+                          label: 'Staff',
+                          value: _staffFilter == 'Semua' ? null : _staffFilter,
+                          items: ['Semua', ..._staffNames],
+                          onSelected: (v) => setState(() => _staffFilter = v),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 16),
               ]),
@@ -652,7 +781,25 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                   )
-                : incidents.isEmpty
+                : _hasError
+                  ? SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
+                            SizedBox(height: 16),
+                            Text(
+                              'Gagal memuat insiden.',
+                              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 8),
+                            TextButton(onPressed: _load, child: Text('Coba lagi')),
+                          ],
+                        ),
+                      ),
+                    )
+                  : incidents.isEmpty
                   ? SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.only(top: 40),
@@ -779,7 +926,7 @@ class _IncidentListTabState extends State<_IncidentListTab> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              item.status,
+                              _statusLabels[item.status] ?? item.status,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -883,6 +1030,7 @@ class _StaffWorkloadTab extends StatefulWidget {
 class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
   final _repo = IncidentRepository();
   bool _isLoading = true;
+  bool _hasError = false;
   List<_StaffLoad> _staffLoads = [];
 
   @override
@@ -892,6 +1040,10 @@ class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
     try {
       final items = await _repo.getAll();
       if (!mounted) return;
@@ -915,6 +1067,8 @@ class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
       setState(() => _staffLoads = sorted);
     } catch (e) {
       debugPrint('_StaffWorkloadTab._load error: $e');
+      if (!mounted) return;
+      setState(() => _hasError = true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -924,6 +1078,23 @@ class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
+            const SizedBox(height: 16),
+            const Text(
+              'Gagal memuat beban kerja.',
+              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _load, child: const Text('Coba lagi')),
+          ],
+        ),
+      );
     }
     if (_staffLoads.isEmpty) {
       return const Center(
@@ -947,6 +1118,7 @@ class _StaffWorkloadTabState extends State<_StaffWorkloadTab> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         children: [
           const Text(
@@ -1082,6 +1254,7 @@ class _MasterDataTabState extends State<_MasterDataTab> {
   List<Building> _buildings = [];
   List<ReportCategory> _categories = [];
   bool _isLoading = true;
+  bool _hasError = false;
   int? _expandedBuilding;
 
   static const _iconOptions = <IconData>[
@@ -1129,6 +1302,10 @@ class _MasterDataTabState extends State<_MasterDataTab> {
   }
 
   Future<void> _load() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
     try {
       final b = await _buildingRepo.getAll();
       final c = await _categoryRepo.getAll();
@@ -1139,6 +1316,8 @@ class _MasterDataTabState extends State<_MasterDataTab> {
       });
     } catch (e) {
       debugPrint('_MasterDataTab._load error: $e');
+      if (!mounted) return;
+      setState(() => _hasError = true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1149,10 +1328,28 @@ class _MasterDataTabState extends State<_MasterDataTab> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Color(0xFFEF4444)),
+            const SizedBox(height: 16),
+            const Text(
+              'Gagal memuat master data.',
+              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextButton(onPressed: _load, child: const Text('Coba lagi')),
+          ],
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         children: [
           const Text(
@@ -1941,6 +2138,91 @@ class _QuickActionCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<String> items;
+  final Widget? icon;
+  final ValueChanged<String> onSelected;
+
+  const _FilterDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    this.icon,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayText = value ?? label;
+    return PopupMenuButton<String>(
+      onSelected: onSelected,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      itemBuilder: (ctx) => [
+        for (final item in items)
+          PopupMenuItem(
+            value: item,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (item != 'Semua' && label == 'Prioritas')
+                  Container(
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      color: priorityColors[item] ?? const Color(0xFF6B7280),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                Text(
+                  item == 'Semua' ? 'Semua $label' : item,
+                  style: TextStyle(
+                    fontWeight: value == item ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: value != null ? const Color(0xFF111827) : const Color(0xFFD1D5DB)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              icon!,
+              const SizedBox(width: 6),
+            ],
+            Flexible(
+              child: Text(
+                displayText,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: value != null ? FontWeight.w600 : FontWeight.w500,
+                  color: value != null ? const Color(0xFF111827) : const Color(0xFF6B7280),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, size: 18, color: Color(0xFF9CA3AF)),
+          ],
         ),
       ),
     );
