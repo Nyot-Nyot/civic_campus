@@ -1,5 +1,5 @@
-import '../models/category.dart';
-import '../dummy_data.dart';
+import 'package:civic_campus/data/models/category.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class CategoryRepository {
   Future<List<ReportCategory>> getAll() async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/dummy_data.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class CategoryStep extends StatelessWidget {
   final String? selectedCategory;

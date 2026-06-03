@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/category.dart';
-import '../../../data/repositories/category_repository.dart';
-import '../../../widgets/color_picker_grid.dart';
-import '../../../widgets/icon_picker_grid.dart';
+import 'package:civic_campus/data/models/category.dart';
+import 'package:civic_campus/data/repositories/category_repository.dart';
+import 'package:civic_campus/screens/admin/widgets/color_picker_grid.dart';
+import 'package:civic_campus/screens/admin/widgets/icon_picker_grid.dart';
 
 void showCategorySheet({
   required BuildContext context,

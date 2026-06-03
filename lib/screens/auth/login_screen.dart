@@ -1,8 +1,8 @@
 import 'package:civic_campus/app_messenger.dart';
-import 'package:civic_campus/screens/admin_home_screen.dart';
-import 'package:civic_campus/screens/staff_home_screen.dart';
-import 'package:civic_campus/screens/student_home_screen.dart';
-import 'package:civic_campus/screens/super_admin_home_screen.dart';
+import 'package:civic_campus/screens/admin/admin_home_screen.dart';
+import 'package:civic_campus/screens/staff/staff_home_screen.dart';
+import 'package:civic_campus/screens/student/student_home_screen.dart';
+import 'package:civic_campus/screens/super_admin/super_admin_home_screen.dart';
 import 'package:civic_campus/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

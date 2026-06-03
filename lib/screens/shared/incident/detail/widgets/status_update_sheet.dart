@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../data/constants/app_constants.dart';
-import '../data/dummy_data.dart';
-import '../data/models/incident.dart';
-import '../data/repositories/incident_repository.dart';
-import 'photo_picker_sheet.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/widgets/photo_picker_sheet.dart';
 
 class StatusUpdateSheet extends StatefulWidget {
   final Incident incident;

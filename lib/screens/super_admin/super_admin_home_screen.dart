@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../data/dummy_data.dart';
-import '../widgets/app_bottom_nav.dart';
-import 'profile_screen.dart';
-import 'shared/incident_list_tab.dart';
-import 'super_admin/tabs/dashboard_tab.dart';
-import 'super_admin/tabs/system_config_tab.dart';
-import 'super_admin/tabs/users_tab.dart';
+import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/widgets/app_bottom_nav.dart';
+import 'package:civic_campus/screens/shared/profile_screen.dart';
+import 'package:civic_campus/screens/shared/incident/incident_list_tab.dart';
+import 'package:civic_campus/screens/super_admin/tabs/dashboard_tab.dart';
+import 'package:civic_campus/screens/super_admin/tabs/system_config_tab.dart';
+import 'package:civic_campus/screens/super_admin/tabs/users_tab.dart';
 
 class SuperAdminHomeScreen extends StatefulWidget {
   static const routeName = '/super-admin-home';

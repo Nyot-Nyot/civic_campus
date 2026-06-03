@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'app_messenger.dart';
-import 'screens/admin_home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/splash_screen.dart';
-import 'screens/staff_home_screen.dart';
-import 'screens/student_home_screen.dart';
-import 'screens/super_admin_home_screen.dart';
-import 'theme/app_theme.dart';
+import 'package:civic_campus/app_messenger.dart';
+import 'package:civic_campus/screens/admin/admin_home_screen.dart';
+import 'package:civic_campus/screens/auth/login_screen.dart';
+import 'package:civic_campus/screens/auth/splash_screen.dart';
+import 'package:civic_campus/screens/staff/staff_home_screen.dart';
+import 'package:civic_campus/screens/student/student_home_screen.dart';
+import 'package:civic_campus/screens/super_admin/super_admin_home_screen.dart';
+import 'package:civic_campus/theme/app_theme.dart';
 
 class CivicCampusApp extends StatelessWidget {
   const CivicCampusApp({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/constants/app_constants.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
 
 class FilterDropdown extends StatelessWidget {
   final String label;

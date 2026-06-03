@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/user.dart';
-import '../../../data/repositories/user_repository.dart';
-import '../../../widgets/state_views.dart';
+import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/repositories/user_repository.dart';
+import 'package:civic_campus/widgets/state_views.dart';
 
 class SuperAdminUsersTab extends StatefulWidget {
   const SuperAdminUsersTab({super.key});

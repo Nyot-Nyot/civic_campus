@@ -1,5 +1,5 @@
-import '../models/building.dart';
-import '../dummy_data.dart';
+import 'package:civic_campus/data/models/building.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class BuildingRepository {
   Future<List<Building>> getAll() async {

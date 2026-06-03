@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../data/models/notification.dart';
-import '../data/repositories/incident_repository.dart';
-import '../data/repositories/notification_repository.dart';
-import '../widgets/state_views.dart';
-import 'incident_detail_screen.dart';
+import 'package:civic_campus/data/models/notification.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/repositories/notification_repository.dart';
+import 'package:civic_campus/widgets/state_views.dart';
+import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final bool showStaffActions;

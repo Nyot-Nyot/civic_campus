@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../data/models/incident.dart';
-import '../data/models/user.dart';
-import '../data/constants/app_constants.dart';
-import '../data/dummy_data.dart';
-import '../data/repositories/incident_repository.dart';
-import '../widgets/logout_sheet.dart';
-import '../widgets/state_views.dart';
-import 'login_screen.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/widgets/logout_sheet.dart';
+import 'package:civic_campus/widgets/state_views.dart';
+import 'package:civic_campus/screens/auth/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final User? user;

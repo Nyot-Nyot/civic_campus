@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/building.dart';
-import '../../../data/models/category.dart';
-import '../../../data/repositories/building_repository.dart';
-import '../../../data/repositories/category_repository.dart';
-import '../../../widgets/state_views.dart';
-import 'master_data_building_sheet.dart';
-import 'master_data_category_sheet.dart';
+import 'package:civic_campus/data/models/building.dart';
+import 'package:civic_campus/data/models/category.dart';
+import 'package:civic_campus/data/repositories/building_repository.dart';
+import 'package:civic_campus/data/repositories/category_repository.dart';
+import 'package:civic_campus/widgets/state_views.dart';
+import 'package:civic_campus/screens/admin/tabs/master_data_building_sheet.dart';
+import 'package:civic_campus/screens/admin/tabs/master_data_category_sheet.dart';
 
 class AdminMasterDataTab extends StatefulWidget {
   const AdminMasterDataTab({super.key});

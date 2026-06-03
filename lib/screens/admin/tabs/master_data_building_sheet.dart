@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/building.dart';
-import '../../../data/repositories/building_repository.dart';
+import 'package:civic_campus/data/models/building.dart';
+import 'package:civic_campus/data/repositories/building_repository.dart';
 
 void showBuildingSheet({
   required BuildContext context,

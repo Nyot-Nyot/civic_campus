@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../data/constants/app_constants.dart';
-import 'student/steps/category_step.dart';
-import 'student/steps/description_step.dart';
-import 'student/steps/location_step.dart';
-import 'student/steps/photo_step.dart';
-import '../widgets/photo_picker_sheet.dart';
-import 'student/steps/review_step.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/screens/student/steps/category_step.dart';
+import 'package:civic_campus/screens/student/steps/description_step.dart';
+import 'package:civic_campus/screens/student/steps/location_step.dart';
+import 'package:civic_campus/screens/student/steps/photo_step.dart';
+import 'package:civic_campus/widgets/photo_picker_sheet.dart';
+import 'package:civic_campus/screens/student/steps/review_step.dart';
 
 class NewReportScreen extends StatefulWidget {
   static const routeName = '/new-report';

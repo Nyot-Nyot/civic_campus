@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../data/models/incident.dart';
-import '../../data/models/user.dart';
-import '../../data/constants/app_constants.dart';
-import '../../data/repositories/incident_repository.dart';
-import '../../data/repositories/user_repository.dart';
-import '../../widgets/admin_incident_card.dart';
-import '../../widgets/filter_dropdown.dart';
-import '../../widgets/state_views.dart';
-import '../incident_detail_screen.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/repositories/user_repository.dart';
+import 'package:civic_campus/widgets/admin_incident_card.dart';
+import 'package:civic_campus/widgets/filter_dropdown.dart';
+import 'package:civic_campus/widgets/state_views.dart';
+import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
 
 class SharedIncidentListTab extends StatefulWidget {
   final String initialStatusFilter;

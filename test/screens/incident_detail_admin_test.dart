@@ -1,6 +1,6 @@
 import 'package:civic_campus/data/dummy_data.dart';
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/screens/incident_detail_screen.dart';
+import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

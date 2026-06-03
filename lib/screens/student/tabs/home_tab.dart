@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/incident.dart';
-import '../../../data/constants/app_constants.dart';
-import '../../../widgets/incident_card.dart';
-import '../../../widgets/state_views.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/widgets/incident_card.dart';
+import 'package:civic_campus/widgets/state_views.dart';
 
 class StudentHomeTab extends StatelessWidget {
   final bool isLoading;

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../data/models/incident.dart';
-import '../data/repositories/incident_repository.dart';
-import '../data/repositories/notification_repository.dart';
-import '../widgets/app_bottom_nav.dart';
-import 'incident_detail_screen.dart';
-import 'my_incidents_screen.dart';
-import 'new_report_screen.dart';
-import 'notification_screen.dart';
-import 'profile_screen.dart';
-import 'student/tabs/home_tab.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/repositories/notification_repository.dart';
+import 'package:civic_campus/widgets/app_bottom_nav.dart';
+import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
+import 'package:civic_campus/screens/student/my_incidents_screen.dart';
+import 'package:civic_campus/screens/student/new_report_screen.dart';
+import 'package:civic_campus/screens/shared/notification_screen.dart';
+import 'package:civic_campus/screens/shared/profile_screen.dart';
+import 'package:civic_campus/screens/student/tabs/home_tab.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   static const routeName = '/student-home';

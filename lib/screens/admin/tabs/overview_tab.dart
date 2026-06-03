@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/incident.dart';
-import '../../../data/repositories/incident_repository.dart';
-import '../../../widgets/state_views.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/widgets/state_views.dart';
 
 class AdminOverviewTab extends StatefulWidget {
   final void Function(String statusFilter) onQuickAction;

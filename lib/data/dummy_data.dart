@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'models/incident.dart';
-import 'models/notification.dart';
-import 'models/building.dart';
-import 'models/category.dart';
-import 'models/user.dart';
-import 'models/suggestion.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/models/notification.dart';
+import 'package:civic_campus/data/models/building.dart';
+import 'package:civic_campus/data/models/category.dart';
+import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/models/suggestion.dart';
 
 // ---------------------------------------------------------------------------
 // INCIDENTS

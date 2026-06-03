@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'login_screen.dart';
-import '../widgets/app_bottom_nav.dart';
-import '../widgets/logout_sheet.dart';
-import 'admin/tabs/overview_tab.dart';
-import 'shared/incident_list_tab.dart';
-import 'admin/tabs/staff_workload_tab.dart';
-import 'admin/tabs/master_data_tab.dart';
+import 'package:civic_campus/screens/auth/login_screen.dart';
+import 'package:civic_campus/widgets/app_bottom_nav.dart';
+import 'package:civic_campus/widgets/logout_sheet.dart';
+import 'package:civic_campus/screens/admin/tabs/overview_tab.dart';
+import 'package:civic_campus/screens/shared/incident/incident_list_tab.dart';
+import 'package:civic_campus/screens/admin/tabs/staff_workload_tab.dart';
+import 'package:civic_campus/screens/admin/tabs/master_data_tab.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   static const routeName = '/admin-home';

@@ -1,5 +1,5 @@
-import '../models/incident.dart';
-import '../dummy_data.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class IncidentRepository {
   static final Map<String, List<String>> _notes = {};

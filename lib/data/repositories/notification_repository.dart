@@ -1,5 +1,5 @@
-import '../models/notification.dart';
-import '../dummy_data.dart';
+import 'package:civic_campus/data/models/notification.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class NotificationRepository {
   late List<NotificationItem> _items;

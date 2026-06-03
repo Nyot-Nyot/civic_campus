@@ -1,10 +1,10 @@
 import 'package:civic_campus/app.dart';
-import 'package:civic_campus/screens/admin_home_screen.dart';
-import 'package:civic_campus/screens/login_screen.dart';
-import 'package:civic_campus/screens/new_report_screen.dart';
-import 'package:civic_campus/screens/splash_screen.dart';
-import 'package:civic_campus/screens/staff_home_screen.dart';
-import 'package:civic_campus/screens/student_home_screen.dart';
+import 'package:civic_campus/screens/admin/admin_home_screen.dart';
+import 'package:civic_campus/screens/auth/login_screen.dart';
+import 'package:civic_campus/screens/student/new_report_screen.dart';
+import 'package:civic_campus/screens/auth/splash_screen.dart';
+import 'package:civic_campus/screens/staff/staff_home_screen.dart';
+import 'package:civic_campus/screens/student/student_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../data/dummy_data.dart';
-import '../data/repositories/notification_repository.dart';
-import '../widgets/app_bottom_nav.dart';
-import 'notification_screen.dart';
-import 'profile_screen.dart';
-import 'staff/tabs/my_tasks_tab.dart';
+import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/data/repositories/notification_repository.dart';
+import 'package:civic_campus/widgets/app_bottom_nav.dart';
+import 'package:civic_campus/screens/shared/notification_screen.dart';
+import 'package:civic_campus/screens/shared/profile_screen.dart';
+import 'package:civic_campus/screens/staff/tabs/my_tasks_tab.dart';
 
 class StaffHomeScreen extends StatefulWidget {
   static const routeName = '/staff-home';

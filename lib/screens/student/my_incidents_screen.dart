@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../data/models/incident.dart';
-import '../data/constants/app_constants.dart';
-import '../data/repositories/incident_repository.dart';
-import '../widgets/incident_card.dart';
-import '../widgets/state_views.dart';
-import 'incident_detail_screen.dart';
+import 'package:civic_campus/data/models/incident.dart';
+import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/widgets/incident_card.dart';
+import 'package:civic_campus/widgets/state_views.dart';
+import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
 
 class MyIncidentsScreen extends StatelessWidget {
   const MyIncidentsScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'photo_source_tile.dart';
+import 'package:civic_campus/widgets/photo_source_tile.dart';
 
 class PhotoPickerSheet extends StatelessWidget {
   final VoidCallback onCamera;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:civic_campus/screens/super_admin_home_screen.dart';
+import 'package:civic_campus/screens/super_admin/super_admin_home_screen.dart';
 
 void main() {
   group('Super Admin Home Screen', () {

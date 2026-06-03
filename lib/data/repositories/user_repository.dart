@@ -1,5 +1,5 @@
-import '../models/user.dart';
-import '../dummy_data.dart';
+import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/dummy_data.dart';
 
 class UserRepository {
   Future<User> getCurrentUser() async {
