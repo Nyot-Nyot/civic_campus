@@ -53,6 +53,24 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
     );
   }
 
+  String _getUnsplashUrl(String category) {
+    switch (category) {
+      case 'Toilet':
+        return 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600';
+      case 'WiFi':
+        return 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=600';
+      case 'AC':
+        return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&q=80&w=600';
+      case 'Lampu':
+      case 'Listrik':
+        return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=600';
+      case 'Kebersihan':
+        return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=600';
+      default:
+        return 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=600';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoryIcon =
@@ -64,174 +82,247 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
     final statusBg =
         statusBgColors[_incident.status] ?? const Color(0xFFF3F4F6);
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 200,
-          pinned: true,
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    categoryColor.withValues(alpha: 0.3),
-                    categoryColor.withValues(alpha: 0.05),
-                  ],
-                ),
-              ),
+    return Stack(
+      children: [
+        // Large background photo of the damage
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 300,
+          child: Image.network(
+            _getUnsplashUrl(_incident.category),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: categoryColor.withValues(alpha: 0.12),
               child: Center(
-                child: Icon(categoryIcon,
-                    size: 72, color: categoryColor.withValues(alpha: 0.4)),
+                child: Icon(
+                  categoryIcon,
+                  size: 80,
+                  color: categoryColor.withValues(alpha: 0.4),
+                ),
               ),
             ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: categoryColor.withValues(alpha: 0.12),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: categoryColor,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child:
-                        Icon(categoryIcon, color: categoryColor, size: 24),
+
+        // Sliding Panel Content
+        Positioned.fill(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 250), // Overlaps the photo by 50px
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, -4),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _incident.title,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF111827),
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Row (Category Icon + Title + Status + ID)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: categoryColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(categoryIcon, color: categoryColor, size: 24),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: statusBg,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Text(
-                                _incident.status,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: statusColor,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _incident.title,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF111827),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: statusBg,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Text(
+                                        IncidentTimeline.statusLabelsIndonesian[_incident.status] ?? _incident.status,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: statusColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _incident.id,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF9CA3AF),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              _incident.id,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9CA3AF),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Info Section (Location, Category, Time, Priority)
+                      _buildInfoRow(Icons.location_on, 'Lokasi', _incident.location),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(Icons.category_outlined, 'Kategori', _incident.category),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(Icons.access_time, 'Waktu', '${_incident.timeAgo} dilaporkan'),
+                      const SizedBox(height: 12),
+                      _buildPriorityRow(_incident.priority),
+
+                      if (widget.showAdminActions) ...[
+                        const SizedBox(height: 24),
+                        _buildConfirmationSection(),
+                        const SizedBox(height: 24),
+                        _buildLinkedReportsSection(),
+                      ] else ...[
+                        if (_incident.confirmationCount > 0) ...[
+                          const SizedBox(height: 12),
+                          _buildInfoRow(Icons.people, 'Konfirmasi',
+                              '+${_incident.confirmationCount} orang'),
+                        ],
                       ],
-                    ),
+                      const SizedBox(height: 32),
+
+                      // Description Section
+                      const Text(
+                        'Deskripsi',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _incident.description.isNotEmpty
+                            ? _incident.description
+                            : 'Tidak ada deskripsi tambahan.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: _incident.description.isNotEmpty
+                              ? const Color(0xFF374151)
+                              : const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Timeline Section
+                      const Text(
+                        'Status Progress',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      IncidentTimeline(
+                        currentStatus: _incident.status,
+                        statusFlow: statusFlow,
+                        statusColors: statusColors,
+                        statusBgColors: statusBgColors,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Photo Grid (Evidence) Section
+                      const Text(
+                        'Foto Bukti Lainnya',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      IncidentPhotoGrid(photoCount: _incident.photoCount),
+                      const SizedBox(height: 32),
+
+                      // Action buttons
+                      _buildActions(context, widget.showStaffActions || widget.showAdminActions),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildInfoRow(Icons.location_on, 'Lokasi', _incident.location),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                  Icons.category_outlined, 'Kategori', _incident.category),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                  Icons.access_time, 'Waktu', '${_incident.timeAgo} dilaporkan'),
-              const SizedBox(height: 12),
-              _buildPriorityRow(_incident.priority),
-              if (widget.showAdminActions) ...[
-                const SizedBox(height: 20),
-                _buildConfirmationSection(),
-                const SizedBox(height: 20),
-                _buildLinkedReportsSection(),
-              ] else ...[
-                if (_incident.confirmationCount > 0) ...[
-                  const SizedBox(height: 12),
-                  _buildInfoRow(Icons.people, 'Konfirmasi',
-                      '+${_incident.confirmationCount} orang'),
-                ],
+                ),
               ],
-              const SizedBox(height: 28),
-              const Text(
-                'Deskripsi',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
+            ),
+          ),
+        ),
+
+        // Floating Back Button
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 20,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _incident.description.isNotEmpty
-                    ? _incident.description
-                    : 'Tidak ada deskripsi tambahan.',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.6,
-                  color: _incident.description.isNotEmpty
-                      ? const Color(0xFF374151)
-                      : const Color(0xFF9CA3AF),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Status Progress',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 16),
-              IncidentTimeline(
-                currentStatus: _incident.status,
-                statusFlow: statusFlow,
-                statusColors: statusColors,
-                statusBgColors: statusBgColors,
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Foto Bukti',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 14),
-              IncidentPhotoGrid(photoCount: _incident.photoCount),
-              const SizedBox(height: 28),
-              _buildActions(context, widget.showStaffActions || widget.showAdminActions),
-              const SizedBox(height: 16),
-            ]),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF111827), size: 20),
+              padding: EdgeInsets.zero,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
         ),
       ],

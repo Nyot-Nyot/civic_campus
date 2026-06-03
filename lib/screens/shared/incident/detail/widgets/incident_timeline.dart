@@ -14,6 +14,14 @@ class IncidentTimeline extends StatelessWidget {
     required this.statusBgColors,
   });
 
+  static const Map<String, String> statusLabelsIndonesian = {
+    'Open': 'Menunggu Penanganan',
+    'Assigned': 'Sudah Ditugaskan',
+    'In Progress': 'Sedang Dikerjakan',
+    'Resolved': 'Selesai Dikerjakan',
+    'Closed': 'Ditutup',
+  };
+
   @override
   Widget build(BuildContext context) {
     final currentIndex =
@@ -26,28 +34,35 @@ class IncidentTimeline extends StatelessWidget {
         final isCurrent = index == currentIndex;
         final isPending = index > currentIndex;
 
+        final statusColor = statusColors[status] ?? const Color(0xFF6B7280);
+        final statusBg = statusBgColors[status] ?? const Color(0xFFF3F4F6);
+        final displayLabel = statusLabelsIndonesian[status] ?? status;
+
         Color circleColor;
-        IconData? icon;
+        Widget? circleChild;
+
         if (isCompleted) {
-          circleColor = const Color(0xFF047857);
-          icon = Icons.check;
+          circleColor = statusColor;
+          circleChild = const Icon(Icons.check, size: 9, color: Colors.white);
         } else if (isCurrent) {
-          circleColor = const Color(0xFF1D4ED8);
-          icon = Icons.circle;
+          circleColor = statusColor;
+          circleChild = Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+          );
         } else {
           circleColor = const Color(0xFFE5E7EB);
-          icon = null;
+          circleChild = null;
         }
 
-        final statusColorStatus =
-            statusColors[status] ?? const Color(0xFF6B7280);
-        final statusBgStatus =
-            statusBgColors[status] ?? const Color(0xFFF3F4F6);
-
-        final connectorHeight = index < statusFlow.length - 1 ? 20.0 : 0.0;
+        final connectorHeight = index < statusFlow.length - 1 ? 24.0 : 0.0;
 
         return SizedBox(
-          height: 44,
+          height: 48,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -55,50 +70,66 @@ class IncidentTimeline extends StatelessWidget {
                 width: 32,
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     Container(
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       decoration: BoxDecoration(
                         color: circleColor,
                         shape: BoxShape.circle,
+                        boxShadow: isCurrent
+                            ? [
+                                BoxShadow(
+                                  color: circleColor.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  spreadRadius: 2,
+                                )
+                              ]
+                            : null,
                       ),
-                      child: icon != null
-                          ? Icon(icon, size: 8, color: Colors.white)
-                          : null,
+                      alignment: Alignment.center,
+                      child: circleChild,
                     ),
                     if (connectorHeight > 0)
-                      SizedBox(
-                        height: connectorHeight,
+                      Expanded(
                         child: Container(
                           width: 2,
                           color: isPending
                               ? const Color(0xFFE5E7EB)
-                              : const Color(0xFF047857),
+                              : circleColor.withValues(alpha: 0.5),
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isCurrent ? statusBgStatus : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight:
-                        isCurrent ? FontWeight.w600 : FontWeight.w400,
-                    color: isCompleted
-                        ? const Color(0xFF047857)
-                        : isCurrent
-                            ? statusColorStatus
-                            : const Color(0xFF9CA3AF),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isCurrent ? statusBg : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          displayLabel,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight:
+                                isCurrent ? FontWeight.bold : FontWeight.w500,
+                            color: isCompleted
+                                ? const Color(0xFF374151)
+                                : isCurrent
+                                    ? statusColor
+                                    : const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
