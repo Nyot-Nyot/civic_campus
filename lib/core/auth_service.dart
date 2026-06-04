@@ -8,14 +8,12 @@ class AuthSession {
   final String refreshToken;
   final String userId;
   final String email;
-  final String? profileId;
 
   const AuthSession({
     required this.accessToken,
     required this.refreshToken,
     required this.userId,
     required this.email,
-    this.profileId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -23,7 +21,6 @@ class AuthSession {
         'refresh_token': refreshToken,
         'user_id': userId,
         'email': email,
-        'profile_id': profileId,
       };
 
   factory AuthSession.fromJson(Map<String, dynamic> json) => AuthSession(
@@ -31,7 +28,6 @@ class AuthSession {
         refreshToken: json['refresh_token'] as String,
         userId: json['user_id'] as String,
         email: json['email'] as String,
-        profileId: json['profile_id'] as String?,
       );
 }
 
@@ -42,10 +38,9 @@ class AuthService extends ChangeNotifier {
   bool _isLoading = false;
 
   AuthService({
-    required ApiClient client,
+    required this._client,
     FlutterSecureStorage? storage,
-  })  : _client = client,
-        _storage = storage ?? const FlutterSecureStorage();
+  }) : _storage = storage ?? const FlutterSecureStorage();
 
   AuthSession? get session => _session;
   bool get isAuthenticated => _session != null;
@@ -75,7 +70,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     final response = await _client.post(
-      '${ApiConfig.authUrl}/token?grant_type=password',
+      '${ApiConfig.baseUrl}/api/auth/sessions?client_type=mobile',
       body: {
         'email': email,
         'password': password,
@@ -91,8 +86,8 @@ class AuthService extends ChangeNotifier {
 
     final data = response.data as Map<String, dynamic>;
     _session = AuthSession(
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
+      accessToken: data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String? ?? '',
       userId: data['user']['id'] as String,
       email: data['user']['email'] as String,
     );
@@ -105,15 +100,17 @@ class AuthService extends ChangeNotifier {
   Future<String?> signUp({
     required String email,
     required String password,
+    String? name,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     final response = await _client.post(
-      '${ApiConfig.authUrl}/signup',
+      '${ApiConfig.baseUrl}/api/auth/users?client_type=mobile',
       body: {
         'email': email,
         'password': password,
+        if (name != null) 'name': name,
       },
     );
 
@@ -124,11 +121,24 @@ class AuthService extends ChangeNotifier {
       return response.error;
     }
 
+    final data = response.data as Map<String, dynamic>;
+    if (data['accessToken'] != null) {
+      _session = AuthSession(
+        accessToken: data['accessToken'] as String,
+        refreshToken: data['refreshToken'] as String? ?? '',
+        userId: data['user']['id'] as String,
+        email: data['user']['email'] as String,
+      );
+      _client.setAccessToken(_session!.accessToken);
+      await _persistSession();
+    }
+
+    notifyListeners();
     return null;
   }
 
   Future<void> signOut() async {
-    await _client.post('${ApiConfig.authUrl}/logout');
+    await _client.post('${ApiConfig.baseUrl}/api/auth/logout');
     _session = null;
     _client.setAccessToken(null);
     await _storage.delete(key: 'auth_session');
@@ -136,19 +146,21 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<String?> refreshSession() async {
-    if (_session == null) return 'Not authenticated';
+    if (_session == null || _session!.refreshToken.isEmpty) {
+      return 'Not authenticated';
+    }
 
     final response = await _client.post(
-      '${ApiConfig.authUrl}/token?grant_type=refresh_token',
-      body: {'refresh_token': _session!.refreshToken},
+      '${ApiConfig.baseUrl}/api/auth/refresh?client_type=mobile',
+      body: {'refreshToken': _session!.refreshToken},
     );
 
     if (response.isError) return response.error;
 
     final data = response.data as Map<String, dynamic>;
     _session = AuthSession(
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
+      accessToken: data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String? ?? _session!.refreshToken,
       userId: data['user']['id'] as String,
       email: data['user']['email'] as String,
     );

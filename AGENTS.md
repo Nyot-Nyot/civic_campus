@@ -19,4 +19,30 @@ Key patterns:
 - Database inserts take an array: `insert([{ ... }])`.
 - Reference users with `auth.users(id)`; use `auth.uid()` in RLS policies.
 - For storage uploads, persist both the returned `url` and `key`.
+
+### Auth API endpoints (NOT Supabase compatible)
+
+| Action | Endpoint | Method |
+|--------|----------|--------|
+| Sign in (mobile) | `POST /api/auth/sessions?client_type=mobile` | `{ email, password }` → `{ accessToken, refreshToken, user }` |
+| Sign up (mobile) | `POST /api/auth/users?client_type=mobile` | `{ email, password, name }` → `{ accessToken, refreshToken, user }` |
+| Sign out | `POST /api/auth/logout` | (no body) |
+| Refresh (mobile) | `POST /api/auth/refresh?client_type=mobile` | `{ refreshToken }` → `{ accessToken, refreshToken, user }` |
+| Get current user | `GET /api/auth/sessions/current` | `Authorization: Bearer {accessToken}` → `{ user }` |
+
+### Edge Functions (4 deployed)
+
+| Slug | Purpose | Auth | URL |
+|------|---------|------|-----|
+| `submit-report` | Submit a report (creates incident or links to existing) | User token required | `POST /functions/submit-report` |
+| `check-duplicates` | Find duplicate incidents by location+category | User token required | `POST /functions/check-duplicates` |
+| `reopen-request` | Request reopen of a resolved/closed incident | User token required | `POST /functions/reopen-request` |
+| `dashboard-stats` | Admin dashboard stats + staff workload | Admin token required | `GET /functions/dashboard-stats` |
+
+Edge functions are TypeScript/Deno, source in `functions/`. They consume `INSFORGE_BASE_URL`, `ANON_KEY` from secrets. All require user auth via `Authorization: Bearer {userToken}`.
+
+### Known issues
+
+- `dedup_score_candidates` PG function had a fix: subquery `where incident_id = c.id` → `where confirmations.incident_id = c.id` (RETURNS TABLE output param name shadowed column ref). Fix applied via `db query` and patched in migration file.
+- Auth in Flutter uses `client_type=mobile` endpoints (not Supabase-compatible `/auth/v1/*` paths).
 <!-- INSFORGE:END -->

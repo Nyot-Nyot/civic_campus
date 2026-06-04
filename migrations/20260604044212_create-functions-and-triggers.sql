@@ -136,7 +136,7 @@ begin
     (select name from public.locations where id = i.location_id),
     (select name from public.categories where id = i.category_id),
     c.status,
-    (select count(*) from public.confirmations where incident_id = c.id),
+    (select count(*) from public.confirmations where confirmations.incident_id = c.id),
     c.updated_at
   from candidate c
   join public.incidents i on c.id = i.id
