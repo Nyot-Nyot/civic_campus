@@ -1,0 +1,118 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  VERSION_NAME: 1.0.0
+
+jobs:
+  ##########################################################################
+  # Unit & Widget Tests — runs on every PR and push
+  ##########################################################################
+  test:
+    name: Unit & Widget Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter analyze --no-fatal-infos
+
+      - name: Run unit & widget tests
+        run: >
+          flutter test
+          test/models/
+          test/screens/
+          test/api/
+          test/widget_test.dart
+          --reporter expanded
+
+  ##########################################################################
+  # Integration Tests — only on main push (needs real backend)
+  ##########################################################################
+  integration:
+    name: Integration Tests
+    if: >
+      github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Create .env.local from secrets
+        run: |
+          echo 'INSFORGE_URL=${{ secrets.INSFORGE_URL }}' > .env.local
+          echo 'INSFORGE_ANON_KEY=${{ secrets.INSFORGE_ANON_KEY }}' >> .env.local
+
+      - name: Run integration tests
+        run: flutter test test/integration/ --reporter expanded
+        timeout-minutes: 5
+
+  ##########################################################################
+  # Build APK & Release — on main push after tests pass
+  ##########################################################################
+  release:
+    name: Build APK & Release
+    if: >
+      github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+    needs: [test, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Create .env.local from secrets
+        run: |
+          echo 'INSFORGE_URL=${{ secrets.INSFORGE_URL }}' > .env.local
+          echo 'INSFORGE_ANON_KEY=${{ secrets.INSFORGE_ANON_KEY }}' >> .env.local
+
+      - name: Build release APK
+        run: >
+          flutter build apk --release
+          --build-name=${{ env.VERSION_NAME }}
+          --build-number=${{ github.run_number }}
+
+      - name: Rename APK with version
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/civic-campus-v${{ env.VERSION_NAME }}+${{ github.run_number }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION_NAME }}+${{ github.run_number }}
+          name: Civic Campus v${{ env.VERSION_NAME }} (build ${{ github.run_number }})
+          body: |
+            ## Civic Campus v${{ env.VERSION_NAME }}-b${{ github.run_number }}
+
+            **Commit:** ${{ github.sha }}
+            **Build:** ${{ github.run_number }}
+            **Date:** ${{ github.event.head_commit.timestamp }}
+
+            ### Ringkasan
+            ${{ github.event.head_commit.message }}
+          files: build/app/outputs/flutter-apk/civic-campus-v${{ env.VERSION_NAME }}+${{ github.run_number }}.apk

@@ -219,8 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildQuickLoginSection(),
-              const SizedBox(height: 28),
             ],
           ),
         ),
@@ -228,64 +226,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildQuickLoginSection() {
-    const roles = [
-      ('Student', 'andi.mahasiswa@campus.id', Color(0xFF3B82F6)),
-      ('Maintenance Staff', 'budi.teknisi@campus.id', Color(0xFF10B981)),
-      ('Facility Admin', 'dewi.admin@campus.id', Color(0xFFF97316)),
-      ('Super Admin', 'super.admin@campus.id', Color(0xFF8B5CF6)),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Testing Tools',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF9CA3AF),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ...roles.map(
-          (r) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: ElevatedButton.icon(
-                key: Key('quick_login_${r.$1.replaceAll(' ', '_')}'),
-                onPressed: () => _quickLogin(r.$2, 'password123'),
-                icon: Icon(Icons.flash_on_rounded, size: 18, color: r.$3),
-                label: Text(
-                  r.$1,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: r.$3.withValues(alpha: 0.1),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(color: r.$3.withValues(alpha: 0.25)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _quickLogin(String email, String password) async {
-    _emailController.text = email;
-    _passwordController.text = password;
-    await _onLoginPressed();
-  }
 }

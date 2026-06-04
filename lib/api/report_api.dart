@@ -50,10 +50,37 @@ class ReportApi {
     );
   }
 
+  Future<ApiResponse> createAttachment({
+    required String reportId,
+    required String storageKey,
+    required String storageUrl,
+    String? mimeType,
+  }) async {
+    return _client.post(
+      '${ApiConfig.restUrl}/report_attachments',
+      body: {
+        'report_id': reportId,
+        'storage_key': storageKey,
+        'storage_url': storageUrl,
+        'mime_type': mimeType ?? 'image/jpeg',
+      },
+    );
+  }
+
   Future<ApiResponse> getAttachments(String reportId) async {
     return _client.get(
       '${ApiConfig.restUrl}/report_attachments',
       queryParams: {'report_id': 'eq.$reportId'},
+    );
+  }
+
+  Future<ApiResponse> getIncidentPhotos(String incidentId) async {
+    return _client.get(
+      '${ApiConfig.restUrl}/reports',
+      queryParams: {
+        'incident_id': 'eq.$incidentId',
+        'select': 'id,report_attachments(storage_url,storage_key)',
+      },
     );
   }
 

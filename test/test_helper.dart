@@ -58,6 +58,9 @@ class MockAuthService extends AuthService {
   String? get userId => null;
 
   @override
+  AuthSession? get session => null;
+
+  @override
   Future<String?> signIn({required String email, required String password}) async {
     return null;
   }
@@ -75,9 +78,13 @@ Future<Widget> wrapAppWithProviders({required Widget child}) async {
   return wrapWithProviders(child: child);
 }
 
-Widget wrapWithProviders({required Widget child}) {
-  final apiClient = MockApiClient();
-  final authService = MockAuthService();
+Widget wrapWithProviders({
+  required Widget child,
+  AuthService? authServiceOverride,
+  ApiClient? apiClientOverride,
+}) {
+  final apiClient = apiClientOverride ?? MockApiClient();
+  final authService = authServiceOverride ?? MockAuthService();
   final incidentApi = IncidentApi(apiClient);
   final reportApi = ReportApi(apiClient);
   final locationApi = LocationApi(apiClient);

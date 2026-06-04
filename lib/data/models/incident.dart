@@ -42,7 +42,7 @@ class Incident {
     this.confirmationCount = 0,
     this.description = '',
     this.assignedTo,
-    this.priority = 'Sedang',
+    this.priority = 'Rendah',
     required this.createdAt,
   });
 
@@ -63,7 +63,7 @@ class Incident {
       confirmationCount: json['confirm_count'] as int? ?? 0,
       description: json['description'] as String? ?? '',
       assignedTo: json['assigned_to_name'] as String? ?? json['assigned_to'] as String?,
-      priority: json['priority_label'] as String? ?? 'Sedang',
+      priority: json['priority_label'] as String? ?? 'Rendah',
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
     );
   }

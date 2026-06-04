@@ -33,6 +33,7 @@ class ReportProvider extends ChangeNotifier {
     _lastResult = null;
     notifyListeners();
 
+    Map<String, dynamic>? uploadResult;
     if (photoBytes != null && photoFileName != null) {
       final uploadResp = await _storage.uploadPhoto(photoBytes, fileName: photoFileName);
       if (uploadResp.isError) {
@@ -41,6 +42,7 @@ class ReportProvider extends ChangeNotifier {
         notifyListeners();
         return uploadResp.error;
       }
+      uploadResult = uploadResp.data as Map<String, dynamic>?;
     }
 
     final response = await _reportApi.submit(
@@ -56,6 +58,21 @@ class ReportProvider extends ChangeNotifier {
     if (response.isSuccess && response.data is Map) {
       _lastResult = response.data as Map<String, dynamic>?;
       notifyListeners();
+
+      if (uploadResult != null) {
+        final innerData = _lastResult?['data'] as Map<String, dynamic>?;
+        final reportId = innerData?['report_id'] as String?;
+        final key = uploadResult['key'] as String?;
+        final url = uploadResult['url'] as String?;
+        if (reportId != null && key != null && url != null) {
+          await _reportApi.createAttachment(
+            reportId: reportId,
+            storageKey: key,
+            storageUrl: url,
+          );
+        }
+      }
+
       return null;
     }
 
@@ -81,6 +98,23 @@ class ReportProvider extends ChangeNotifier {
       }
     }
     return [];
+  }
+
+  Future<List<String>> getIncidentPhotoUrls(String incidentId) async {
+    final response = await _reportApi.getIncidentPhotos(incidentId);
+    final urls = <String>[];
+    if (response.isSuccess && response.data is List) {
+      for (final report in response.data as List) {
+        final attachments = report['report_attachments'] as List?;
+        if (attachments != null) {
+          for (final att in attachments) {
+            final url = att['storage_url'] as String?;
+            if (url != null && url.isNotEmpty) urls.add(url);
+          }
+        }
+      }
+    }
+    return urls;
   }
 
   void reset() {

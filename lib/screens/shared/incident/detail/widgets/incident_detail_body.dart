@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/providers/report_provider.dart';
 import 'package:civic_campus/screens/shared/incident/detail/widgets/incident_photo_grid.dart';
 import 'package:civic_campus/screens/shared/incident/detail/widgets/incident_timeline.dart';
 import 'package:civic_campus/screens/shared/incident/detail/widgets/notes_sheet.dart';
@@ -29,6 +31,24 @@ class IncidentDetailBody extends StatefulWidget {
 
 class IncidentDetailBodyState extends State<IncidentDetailBody> {
   Incident get _incident => widget.incident;
+  List<String>? _photoUrls;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_loadPhotos);
+  }
+
+  Future<void> _loadPhotos() async {
+    try {
+      final urls = await context.read<ReportProvider>().getIncidentPhotoUrls(
+        _incident.id,
+      );
+      if (mounted) setState(() => _photoUrls = urls);
+    } catch (_) {
+      if (mounted) setState(() => _photoUrls = []);
+    }
+  }
 
   void showResolveSheet(BuildContext context) {
     _showStatusUpdateSheet(context, [statusResolved]);
@@ -82,16 +102,22 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
     final statusBg =
         statusBgColors[_incident.status] ?? const Color(0xFFF3F4F6);
 
+    final hasRealPhoto = _photoUrls != null && _photoUrls!.isNotEmpty;
+    final heroUrl = hasRealPhoto
+        ? _photoUrls!.first
+        : _getUnsplashUrl(_incident.category);
+    final gridUrls = hasRealPhoto ? _photoUrls!.sublist(1) : <String>[];
+
     return Stack(
       children: [
-        // Large background photo of the damage
+        // Large background photo (real or Unsplash fallback)
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: 300,
           child: Image.network(
-            _getUnsplashUrl(_incident.category),
+            heroUrl,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Container(
               color: categoryColor.withValues(alpha: 0.12),
@@ -274,7 +300,7 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      IncidentPhotoGrid(photoCount: _incident.photoCount),
+                      IncidentPhotoGrid(photoUrls: gridUrls),
                       const SizedBox(height: 32),
 
                       // Action buttons
