@@ -41,6 +41,20 @@ Key patterns:
 
 Edge functions are TypeScript/Deno, source in `functions/`. They consume `INSFORGE_BASE_URL`, `ANON_KEY` from secrets. All require user auth via `Authorization: Bearer {userToken}`.
 
+### Flutter API Layer (`lib/api/`)
+
+| Service | File | Endpoints |
+|---------|------|-----------|
+| `IncidentApi` | `lib/api/incident_api.dart` | list, getById, create, update, updateStatus, getHistory, getNotes, addNote |
+| `ReportApi` | `lib/api/report_api.dart` | submit (edge fn), checkDuplicates (edge fn), confirm, getAttachments, getReports |
+| `LocationApi` | `lib/api/location_api.dart` | getBuildings, getFloors, getAreas, getById, create, update, delete |
+| `CategoryApi` | `lib/api/category_api.dart` | list, getById, create, update, delete |
+| `UserApi` | `lib/api/user_api.dart` | list, getById, create, update, toggleActive |
+| `NotificationApi` | `lib/api/notification_api.dart` | list, getUnreadCount, markRead, markAllRead |
+| `StorageService` | `lib/api/storage_service.dart` | uploadPhoto, getPublicUrl, deletePhoto |
+
+All services receive `ApiClient` via constructor injection and return `ApiResponse`. Use PostgREST query params (eq., in., ilike., order, limit, offset). Barrel export: `import 'package:civic_campus/api/api.dart'`.
+
 ### Known issues
 
 - `dedup_score_candidates` PG function had a fix: subquery `where incident_id = c.id` → `where confirmations.incident_id = c.id` (RETURNS TABLE output param name shadowed column ref). Fix applied via `db query` and patched in migration file.

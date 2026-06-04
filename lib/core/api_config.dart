@@ -6,7 +6,6 @@ class ApiConfig {
 
   static String get anonKey => dotenv.get('INSFORGE_ANON_KEY');
 
-  static String get authUrl => '$baseUrl/auth/v1';
   static String get restUrl => '$baseUrl/rest/v1';
   static String get storageUrl => '$baseUrl/storage/v1';
   static String get functionsUrl => '$baseUrl/functions';
