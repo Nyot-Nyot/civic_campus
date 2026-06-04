@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:civic_campus/api/realtime_service.dart';
 import 'package:civic_campus/data/providers/auth_provider.dart';
 import 'package:civic_campus/data/providers/notification_provider.dart';
 import 'package:civic_campus/widgets/app_bottom_nav.dart';
@@ -20,11 +21,34 @@ class StaffHomeScreen extends StatefulWidget {
 class _StaffHomeScreenState extends State<StaffHomeScreen> {
   int _selectedIndex = 0;
   int _unreadNotificationCount = 0;
+  final _realtimeService = RealtimeService();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadUnreadCount());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUnreadCount();
+      _connectRealtime();
+    });
+  }
+
+  @override
+  void dispose() {
+    _realtimeService.disconnect();
+    super.dispose();
+  }
+
+  Future<void> _connectRealtime() async {
+    final auth = context.read<AuthProvider>();
+    final token = auth.accessToken;
+    final userId = auth.userId;
+    if (token == null || userId == null) return;
+
+    _realtimeService.setOnNewNotification((_) {
+      if (mounted) _loadUnreadCount();
+    });
+    await _realtimeService.connect(token);
+    _realtimeService.subscribe('notifications:$userId');
   }
 
   Future<void> _loadUnreadCount() async {

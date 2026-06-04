@@ -21,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
   String? get profileError => _profileError;
   bool get isAuthenticated => _authService.isAuthenticated;
   String? get userId => _authService.userId;
+  String? get accessToken => _authService.session?.accessToken;
 
   Future<String?> signIn(String email, String password) {
     return _authService.signIn(email: email, password: password);
