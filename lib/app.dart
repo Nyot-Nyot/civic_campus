@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:civic_campus/app_messenger.dart';
 import 'package:civic_campus/screens/admin/admin_home_screen.dart';
 import 'package:civic_campus/screens/auth/login_screen.dart';
+import 'package:civic_campus/screens/auth/sign_up_screen.dart';
 import 'package:civic_campus/screens/auth/splash_screen.dart';
 import 'package:civic_campus/screens/staff/staff_home_screen.dart';
 import 'package:civic_campus/screens/student/student_home_screen.dart';
@@ -23,6 +24,7 @@ class CivicCampusApp extends StatelessWidget {
       routes: {
         SplashScreen.routeName: (context) => const SplashScreen(),
         LoginScreen.routeName: (context) => const LoginScreen(),
+        SignUpScreen.routeName: (context) => const SignUpScreen(),
         StudentHomeScreen.routeName: (context) => const StudentHomeScreen(),
         StaffHomeScreen.routeName: (context) => const StaffHomeScreen(),
         AdminHomeScreen.routeName: (context) => const AdminHomeScreen(),

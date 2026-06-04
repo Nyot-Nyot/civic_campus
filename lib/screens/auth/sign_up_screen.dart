@@ -3,38 +3,44 @@ import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
-  static const routeName = '/login';
+class SignUpScreen extends StatefulWidget {
+  static const routeName = '/sign-up';
 
-  const LoginScreen({super.key});
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _onLoginPressed() async {
+  Future<void> _onSignUpPressed() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
     try {
       final auth = context.read<AuthProvider>();
-      final error = await auth.signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
+      final error = await auth.signUpWithProfile(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
       );
 
       if (!mounted) return;
@@ -50,34 +56,17 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      await auth.loadProfile();
       if (!mounted) return;
 
-      final role = auth.profile?['role'] as String?;
-      String route;
-      switch (role) {
-        case 'Super Admin':
-          route = '/super-admin-home';
-          break;
-        case 'Facility Admin':
-          route = '/admin-home';
-          break;
-        case 'Maintenance Staff':
-          route = '/staff-home';
-          break;
-        default:
-          route = '/student-home';
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login berhasil!')),
+        const SnackBar(content: Text('Akun berhasil dibuat!')),
       );
-      Navigator.of(context).pushReplacementNamed(route);
+      Navigator.of(context).pushReplacementNamed('/student-home');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login gagal: ${e.toString()}'),
+          content: Text('Pendaftaran gagal: ${e.toString()}'),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
@@ -102,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 18),
               const Text(
-                'Masuk ke CIVIC Campus',
+                'Daftar Akun Baru',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -111,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Aplikasi pelaporan dan manajemen insiden fasilitas kampus.',
+                'Buat akun untuk mulai melaporkan insiden fasilitas kampus.',
                 style: TextStyle(
                   color: Color(0xFF6B7280),
                   fontSize: 16,
@@ -132,7 +121,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
-                          key: const Key('login_email'),
+                          key: const Key('signup_name'),
+                          controller: _nameController,
+                          enabled: !_isLoading,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama lengkap',
+                            hintText: 'Contoh: Ahmad Santoso',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Nama wajib diisi';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          key: const Key('signup_email'),
                           controller: _emailController,
                           enabled: !_isLoading,
                           keyboardType: TextInputType.emailAddress,
@@ -153,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 18),
                         TextFormField(
-                          key: const Key('login_password'),
+                          key: const Key('signup_password'),
                           controller: _passwordController,
                           enabled: !_isLoading,
                           obscureText: !_isPasswordVisible,
@@ -183,25 +190,42 @@ class _LoginScreenState extends State<LoginScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Fitur lupa kata sandi belum tersedia.',
-                                ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          key: const Key('signup_confirm_password'),
+                          controller: _confirmPasswordController,
+                          enabled: !_isLoading,
+                          obscureText: !_isConfirmPasswordVisible,
+                          decoration: InputDecoration(
+                            labelText: 'Konfirmasi kata sandi',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isConfirmPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                               ),
-                            );
-                          },
-                          child: const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text('Lupa kata sandi?'),
+                              onPressed: () {
+                                setState(() {
+                                  _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible;
+                                });
+                              },
+                            ),
                           ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Konfirmasi kata sandi wajib diisi';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Kata sandi tidak cocok';
+                            }
+                            return null;
+                          },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _onLoginPressed,
+                          onPressed: _isLoading ? null : _onSignUpPressed,
                           child: _isLoading
                               ? const SizedBox(
                                   width: 22,
@@ -211,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Masuk'),
+                              : const Text('Daftar'),
                         ),
                       ],
                     ),
@@ -221,9 +245,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 20),
               Center(
                 child: TextButton(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed('/sign-up'),
-                  child: const Text('Belum punya akun? Daftar'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Sudah punya akun? Masuk'),
                 ),
               ),
               const SizedBox(height: 32),
@@ -233,5 +256,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
 }

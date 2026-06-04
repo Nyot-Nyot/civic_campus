@@ -31,6 +31,28 @@ class AuthProvider extends ChangeNotifier {
     return _authService.signUp(email: email, password: password, name: name);
   }
 
+  Future<String?> signUpWithProfile({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    final error = await _authService.signUp(email: email, password: password, name: name);
+    if (error != null) return error;
+
+    final uid = _authService.userId;
+    if (uid == null) return 'Gagal mendapatkan ID pengguna';
+
+    final profileResponse = await _userApi.create({
+      'id': uid,
+      'name': name,
+      'role': 'Student',
+    });
+    if (profileResponse.isError) return profileResponse.error;
+
+    await loadProfile();
+    return null;
+  }
+
   Future<void> signOut() async {
     _profile = null;
     await _authService.signOut();
