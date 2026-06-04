@@ -25,6 +25,11 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Create placeholder .env.local for analyze
+        run: |
+          echo 'INSFORGE_URL=https://f3k6x5hq.ap-southeast.insforge.app' > .env.local
+          echo 'INSFORGE_ANON_KEY=test-anon-key' >> .env.local
+
       - run: flutter analyze --no-fatal-infos
 
       - name: Run unit & widget tests
