@@ -55,6 +55,20 @@ Edge functions are TypeScript/Deno, source in `functions/`. They consume `INSFOR
 
 All services receive `ApiClient` via constructor injection and return `ApiResponse`. Use PostgREST query params (eq., in., ilike., order, limit, offset). Barrel export: `import 'package:civic_campus/api/api.dart'`.
 
+### Flutter Provider Layer (`lib/data/providers/`)
+
+| Provider | File | Depends On | Key Methods |
+|----------|------|------------|-------------|
+| `AuthProvider` | `lib/data/providers/auth_provider.dart` | AuthService, UserApi | signIn, signUp, signOut, loadProfile, updateProfile |
+| `IncidentProvider` | `lib/data/providers/incident_provider.dart` | IncidentApi | loadAll, loadById, updateStatus, addNote, getHistory, getNotes |
+| `LocationProvider` | `lib/data/providers/location_provider.dart` | LocationApi | loadBuildings, selectBuilding, selectFloor, selectArea, create, update, delete |
+| `CategoryProvider` | `lib/data/providers/category_provider.dart` | CategoryApi | load, create, update, delete |
+| `UserProvider` | `lib/data/providers/user_provider.dart` | UserApi | load, create, update, toggleActive, getStaff, getAdmins |
+| `NotificationProvider` | `lib/data/providers/notification_provider.dart` | NotificationApi | load, markRead, markAllRead |
+| `ReportProvider` | `lib/data/providers/report_provider.dart` | ReportApi, StorageService | submit, checkDuplicates, reset |
+
+All providers extend `ChangeNotifier` and are injected via `MultiProvider` in `main.dart`. They expose `isLoading`, `error`, and data collections. Access via `context.read<X>()` or `context.watch<X>()`.
+
 ### Known issues
 
 - `dedup_score_candidates` PG function had a fix: subquery `where incident_id = c.id` → `where confirmations.incident_id = c.id` (RETURNS TABLE output param name shadowed column ref). Fix applied via `db query` and patched in migration file.
