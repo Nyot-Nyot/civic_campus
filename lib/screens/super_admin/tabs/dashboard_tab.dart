@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/models/user.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
-import 'package:civic_campus/data/repositories/user_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
+import 'package:civic_campus/data/providers/user_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 
 class SuperAdminDashboardTab extends StatefulWidget {
@@ -14,8 +13,6 @@ class SuperAdminDashboardTab extends StatefulWidget {
 }
 
 class _SuperAdminDashboardTabState extends State<SuperAdminDashboardTab> {
-  final _incidentRepo = IncidentRepository();
-  final _userRepo = UserRepository();
   bool _isLoading = true;
   bool _hasError = false;
 
@@ -38,7 +35,7 @@ class _SuperAdminDashboardTabState extends State<SuperAdminDashboardTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -47,37 +44,52 @@ class _SuperAdminDashboardTabState extends State<SuperAdminDashboardTab> {
       _isLoading = true;
     });
     try {
-      final results = await Future.wait([
-        _userRepo.getAllUsers(),
-        _incidentRepo.getAll(),
+      final incProvider = context.read<IncidentProvider>();
+      final userProvider = context.read<UserProvider>();
+      await Future.wait([
+        incProvider.loadAll(),
+        userProvider.load(),
       ]);
       if (!mounted) return;
-      final users = results[0] as List<User>;
-      final incidents = results[1] as List<Incident>;
+      final users = userProvider.users;
+      final incidents = incProvider.incidents;
 
       setState(() {
-        _studentCount = users.where((u) => u.role == 'Student').length;
-        _staffCount = users.where((u) => u.role == 'Staff').length;
+        _studentCount = users.where((u) => u['role'] == 'Student').length;
+        _staffCount = users.where((u) => u['role'] == 'Maintenance Staff').length;
         _facilityAdminCount = users.where(
-          (u) => u.role == 'Facility Admin' || u.role == 'Super Admin',
+          (u) => u['role'] == 'Facility Admin' || u['role'] == 'Super Admin',
         ).length;
         _totalUsers = users.length;
 
         _totalIncidents = incidents.length;
-        _openCount = incidents.where((i) => i.status == statusOpen).length;
-        _assignedCount = incidents.where((i) => i.status == statusAssigned).length;
-        _inProgressCount = incidents.where((i) => i.status == statusInProgress).length;
-        _resolvedCount = incidents.where((i) => i.status == statusResolved).length;
-        _closedCount = incidents.where((i) => i.status == statusClosed).length;
-        _highPriorityCount = incidents.where((i) => i.priority == 'Tinggi' && i.status != statusClosed).length;
-        _unassignedCount = incidents.where((i) => i.status == statusOpen && i.assignedTo == null).length;
-        _overdueCount = incidents.where((i) => i.isOverdue()).length;
+        _openCount = incidents.where((i) => i['status'] == 'Open').length;
+        _assignedCount = incidents.where((i) => i['status'] == 'Assigned').length;
+        _inProgressCount = incidents.where((i) => i['status'] == 'In Progress').length;
+        _resolvedCount = incidents.where((i) => i['status'] == 'Resolved').length;
+        _closedCount = incidents.where((i) => i['status'] == 'Closed').length;
+        _highPriorityCount = incidents.where((i) =>
+          i['priority_label'] == 'Tinggi' && i['status'] != 'Closed'
+        ).length;
+        _unassignedCount = incidents.where((i) =>
+          i['status'] == 'Open' && i['assigned_to'] == null && i['assigned_to_name'] == null
+        ).length;
+        _overdueCount = incidents.where((i) {
+          final status = i['status'] as String? ?? '';
+          if ({'Resolved', 'Closed'}.contains(status)) return false;
+          final createdAtStr = i['created_at'] as String? ?? '';
+          final createdAt = DateTime.tryParse(createdAtStr) ?? DateTime.now();
+          return DateTime.now().difference(createdAt) > const Duration(hours: 24);
+        }).length;
         final activeStaff = <String>{};
         for (final i in incidents) {
-          if (i.assignedTo != null &&
-              i.status != statusResolved &&
-              i.status != statusClosed) {
-            activeStaff.add(i.assignedTo!);
+          final assignedTo = i['assigned_to_name'] as String? ??
+              i['assigned_to'] as String?;
+          final status = i['status'] as String? ?? '';
+          if (assignedTo != null &&
+              status != 'Resolved' &&
+              status != 'Closed') {
+            activeStaff.add(assignedTo);
           }
         }
         _activeStaffCount = activeStaff.length;

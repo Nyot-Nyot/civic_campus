@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:civic_campus/data/dummy_data.dart';
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 
 class RejectSheet extends StatefulWidget {
   final Incident incident;
@@ -16,7 +16,6 @@ class RejectSheet extends StatefulWidget {
 
 class _RejectSheetState extends State<RejectSheet> {
   final _reasonController = TextEditingController();
-  final _repo = IncidentRepository();
   bool _isSubmitting = false;
 
   late final bool _fromResolved;
@@ -130,22 +129,21 @@ class _RejectSheetState extends State<RejectSheet> {
     }
     setState(() => _isSubmitting = true);
     final newStatus = _fromResolved ? statusAssigned : widget.incident.status;
-    final ok = await _repo.updateStatus(
-      widget.incident.id,
-      newStatus,
-      notes: 'Ditolak: $reason',
-    );
+    final provider = context.read<IncidentProvider>();
+    final err = await provider.updateStatus(widget.incident.id, newStatus);
     if (!mounted) return;
-    if (!ok) {
+    if (err != null) {
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Laporan tidak ditemukan.')),
       );
       return;
     }
-    final updated = allIncidents.firstWhere(
-      (i) => i.id == widget.incident.id,
-      orElse: () => widget.incident,
-    );
+    await provider.loadById(widget.incident.id);
+    if (!mounted) return;
+    final updated = provider.selectedIncident != null
+        ? Incident.fromJson(provider.selectedIncident!)
+        : widget.incident;
     widget.onRejected(updated);
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(

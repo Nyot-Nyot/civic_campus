@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 class PhotoStep extends StatelessWidget {
@@ -81,25 +83,13 @@ class PhotoStep extends StatelessWidget {
       children: [
         Container(
           width: 120,
+          height: 120,
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.image, size: 36, color: Color(0xFF9CA3AF)),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('Foto ${index + 1}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF6B7280))),
-              ),
-            ],
+            image: DecorationImage(
+              image: FileImage(File(photos[index])),
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         Positioned(

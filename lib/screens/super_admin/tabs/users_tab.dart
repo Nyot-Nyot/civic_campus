@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/user.dart';
-import 'package:civic_campus/data/repositories/user_repository.dart';
+import 'package:civic_campus/data/providers/user_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 
 class SuperAdminUsersTab extends StatefulWidget {
@@ -12,14 +13,13 @@ class SuperAdminUsersTab extends StatefulWidget {
 }
 
 class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
-  final _repo = UserRepository();
   List<User> _users = [];
   bool _isLoading = true;
   bool _hasError = false;
 
   static const _roles = [
     'Student',
-    'Staff',
+    'Maintenance Staff',
     'Facility Admin',
     'Super Admin',
   ];
@@ -27,7 +27,7 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -36,10 +36,12 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
       _isLoading = true;
     });
     try {
-      final users = await _repo.getAllUsers();
+      final provider = context.read<UserProvider>();
+      await provider.load();
       if (!mounted) return;
+      final userMaps = provider.users;
       setState(() {
-        _users = users;
+        _users = userMaps.map((m) => User.fromJson(m)).toList();
       });
     } catch (e) {
       debugPrint('SuperAdminUsersTab._load error: $e');
@@ -52,7 +54,6 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
 
   Future<void> _showUserSheet({User? user}) async {
     final isEditing = user != null;
-    final originalEmail = user?.email;
     final nameController = TextEditingController(text: user?.name ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
     String selectedRole = user?.role ?? 'Student';
@@ -137,16 +138,20 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
                         final name = nameController.text.trim();
                         final email = emailController.text.trim();
                         if (name.isEmpty || email.isEmpty) return;
-                        final newUser = User(
-                          name: name,
-                          role: selectedRole,
-                          email: email,
-                          isActive: activeStatus,
-                        );
+                        final provider = context.read<UserProvider>();
                         if (isEditing) {
-                          await _repo.updateUser(originalEmail!, newUser);
+                          await provider.update(user.email, {
+                            'name': name,
+                            'role': selectedRole,
+                            'email': email,
+                            'is_active': activeStatus,
+                          });
                         } else {
-                          await _repo.addUser(newUser);
+                          await provider.create({
+                            'name': name,
+                            'role': selectedRole,
+                            'email': email,
+                          });
                         }
                         if (!ctx.mounted) return;
                         Navigator.pop(ctx, true);
@@ -191,7 +196,8 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
       ),
     );
     if (confirmed == true) {
-      await _repo.deleteUser(user.email);
+      final provider = context.read<UserProvider>();
+      await provider.update(user.email, {'is_active': false});
       if (!mounted) return;
       _load();
     }
@@ -201,7 +207,7 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
     switch (role) {
       case 'Student':
         return const Color(0xFF3B82F6);
-      case 'Staff':
+      case 'Maintenance Staff':
         return const Color(0xFF10B981);
       case 'Facility Admin':
         return const Color(0xFFF97316);
@@ -338,7 +344,10 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
                                         _showUserSheet(user: user);
                                         break;
                                       case 'toggle':
-                                        await _repo.toggleUserActive(user.email);
+                                        await context.read<UserProvider>().toggleActive(
+                                          user.email,
+                                          !user.isActive,
+                                        );
                                         if (!mounted) return;
                                         _load();
                                         break;
@@ -403,19 +412,19 @@ class _SuperAdminUsersTabState extends State<SuperAdminUsersTab> {
                         padding: EdgeInsets.only(bottom: 16),
                         child: _MatrixHeader(),
                       ),
-                      _PermissionRow('Laporkan Insiden', '✓', '✓', '✓', '✓'),
+                      _PermissionRow('Laporkan Insiden', '\u2713', '\u2713', '\u2713', '\u2713'),
                       const Divider(height: 24),
-                      _PermissionRow('Konfirmasi Insiden', '✓', '—', '✓', '✓'),
+                      _PermissionRow('Konfirmasi Insiden', '\u2713', '\u2014', '\u2713', '\u2713'),
                       const Divider(height: 24),
-                      _PermissionRow('Ambil Tugas', '—', '✓', '—', '—'),
+                      _PermissionRow('Ambil Tugas', '\u2014', '\u2713', '\u2014', '\u2014'),
                       const Divider(height: 24),
-                      _PermissionRow('Assign Staff', '—', '—', '✓', '✓'),
+                      _PermissionRow('Assign Staff', '\u2014', '\u2014', '\u2713', '\u2713'),
                       const Divider(height: 24),
-                      _PermissionRow('Tutup Insiden', '—', '—', '✓', '✓'),
+                      _PermissionRow('Tutup Insiden', '\u2014', '\u2014', '\u2713', '\u2713'),
                       const Divider(height: 24),
-                      _PermissionRow('Kelola Data Master', '—', '—', '✓', '✓'),
+                      _PermissionRow('Kelola Data Master', '\u2014', '\u2014', '\u2713', '\u2713'),
                       const Divider(height: 24),
-                      _PermissionRow('Kelola Pengguna', '—', '—', '—', '✓'),
+                      _PermissionRow('Kelola Pengguna', '\u2014', '\u2014', '\u2014', '\u2713'),
                     ],
                   ),
                 ),
@@ -474,7 +483,7 @@ class _RoleCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCheck = value == '✓';
+    final isCheck = value == '\u2713';
     return Icon(
       isCheck ? Icons.check_circle : Icons.remove_circle_outline,
       size: 18,

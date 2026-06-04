@@ -11,6 +11,15 @@ class User {
     this.isActive = true,
   });
 
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      name: json['name'] as String? ?? 'User',
+      role: json['role'] as String? ?? 'Student',
+      email: json['email'] as String? ?? '',
+      isActive: json['is_active'] as bool? ?? true,
+    );
+  }
+
   User copyWith({
     String? name,
     String? role,

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:civic_campus/data/dummy_data.dart';
-import 'package:civic_campus/data/models/building.dart';
-
 class LocationStep extends StatelessWidget {
   final String? selectedBuilding;
   final String? selectedFloor;
@@ -14,6 +11,13 @@ class LocationStep extends StatelessWidget {
   final ValueChanged<String> onAreaSelected;
   final VoidCallback onClearArea;
   final VoidCallback onSearchChanged;
+
+  final List<String> buildings;
+  final List<String> floors;
+  final List<String> areas;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const LocationStep({
     super.key,
@@ -27,27 +31,18 @@ class LocationStep extends StatelessWidget {
     required this.onAreaSelected,
     required this.onClearArea,
     required this.onSearchChanged,
+    required this.buildings,
+    required this.floors,
+    required this.areas,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
-  Floor? get _currentFloor {
-    if (selectedBuilding == null || selectedFloor == null) return null;
-    final building = allBuildings.firstWhere((b) => b.name == selectedBuilding, orElse: () => const Building(name: '', floors: []));
-    return building.floors.firstWhere((f) => f.name == selectedFloor, orElse: () => const Floor(name: '', areas: []));
-  }
-
-  List<Building> get _filteredBuildings {
+  List<String> get _filteredBuildings {
     final query = searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return allBuildings;
-    return allBuildings.where((b) {
-      if (b.name.toLowerCase().contains(query)) return true;
-      for (final f in b.floors) {
-        if (f.name.toLowerCase().contains(query)) return true;
-        for (final a in f.areas) {
-          if (a.toLowerCase().contains(query)) return true;
-        }
-      }
-      return false;
-    }).toList();
+    if (query.isEmpty) return buildings;
+    return buildings.where((b) => b.toLowerCase().contains(query)).toList();
   }
 
   @override
@@ -73,14 +68,52 @@ class LocationStep extends StatelessWidget {
           onChanged: (_) => onSearchChanged(),
         ),
         const SizedBox(height: 20),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (errorMessage != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFECACA)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline, size: 20, color: Color(0xFFEF4444)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(errorMessage!,
+                          style: const TextStyle(fontSize: 14, color: Color(0xFF991B1B))),
+                    ),
+                  ],
+                ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
         if (selectedArea != null && selectedFloor != null && selectedBuilding != null) ...[
           _buildLocationPath(),
           const SizedBox(height: 20),
         ],
-        if (selectedBuilding == null)
+        if (!isLoading && errorMessage == null && selectedBuilding == null)
           _ChipSection(
             title: 'Pilih Gedung / Area',
-            chips: _filteredBuildings.map((b) => b.name).toList(),
+            chips: _filteredBuildings,
             selected: null,
             onSelect: (v) {
               onBuildingSelected(v);
@@ -92,18 +125,14 @@ class LocationStep extends StatelessWidget {
           _ChipSection(
             title: 'Pilih Lantai',
             hint: selectedBuilding == 'Lokasi Luar Gedung' ? 'Pilih kategori area luar' : null,
-            chips: allBuildings
-                .firstWhere((b) => b.name == selectedBuilding, orElse: () => const Building(name: '', floors: []))
-                .floors
-                .map((f) => f.name)
-                .toList(),
+            chips: floors,
             selected: null,
             onSelect: onFloorSelected,
           ),
         if (selectedFloor != null && selectedArea == null)
           _ChipSection(
             title: 'Pilih Ruangan / Area',
-            chips: _currentFloor?.areas ?? [],
+            chips: areas,
             selected: null,
             onSelect: onAreaSelected,
           ),

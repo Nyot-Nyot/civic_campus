@@ -21,6 +21,19 @@ class NotificationItem {
     this.incidentId,
   });
 
+  factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    return NotificationItem(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      body: json['body'] as String,
+      timeAgo: json['created_at'] as String,
+      isUnread: json['read_at'] == null,
+      icon: Icons.notifications,
+      iconColor: Colors.blue,
+      incidentId: json['entity_id'] as String?,
+    );
+  }
+
   NotificationItem.from(NotificationItem other)
       : id = other.id,
         title = other.title,

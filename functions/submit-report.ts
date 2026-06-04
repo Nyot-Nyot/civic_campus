@@ -55,7 +55,7 @@ export default async function (req: Request): Promise<Response> {
       p_location_id: location_id,
       p_location_details: location_details || '',
       p_category_id: category_id,
-      p_description: description || '',
+      p_description: description || null,
       p_existing_incident_id: existing_incident_id || null,
     });
 

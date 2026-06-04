@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/dummy_data.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 
 class NotesSheet extends StatefulWidget {
   final Incident incident;
@@ -16,7 +16,6 @@ class NotesSheet extends StatefulWidget {
 
 class _NotesSheetState extends State<NotesSheet> {
   final _noteController = TextEditingController();
-  final _repo = IncidentRepository();
   bool _isSaving = false;
 
   @override
@@ -123,22 +122,21 @@ class _NotesSheetState extends State<NotesSheet> {
       return;
     }
     setState(() => _isSaving = true);
-    final ok = await _repo.updateStatus(
-      widget.incident.id,
-      widget.incident.status,
-      notes: note,
-    );
+    final provider = context.read<IncidentProvider>();
+    final err = await provider.addNote(widget.incident.id, note);
     if (!mounted) return;
-    if (!ok) {
+    if (err != null) {
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Laporan tidak ditemukan.')),
       );
       return;
     }
-    final updated = allIncidents.firstWhere(
-      (i) => i.id == widget.incident.id,
-      orElse: () => widget.incident,
-    );
+    await provider.loadById(widget.incident.id);
+    if (!mounted) return;
+    final updated = provider.selectedIncident != null
+        ? Incident.fromJson(provider.selectedIncident!)
+        : widget.incident;
     widget.onSaved(updated);
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(

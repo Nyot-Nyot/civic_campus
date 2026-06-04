@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:civic_campus/data/models/building.dart';
 import 'package:civic_campus/data/models/category.dart';
-import 'package:civic_campus/data/repositories/building_repository.dart';
-import 'package:civic_campus/data/repositories/category_repository.dart';
+import 'package:civic_campus/data/providers/location_provider.dart';
+import 'package:civic_campus/data/providers/category_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 import 'package:civic_campus/screens/admin/tabs/master_data_building_sheet.dart';
 import 'package:civic_campus/screens/admin/tabs/master_data_category_sheet.dart';
+
+class _BuildingTree {
+  final String id;
+  final String name;
+  final List<_FloorTree> floors;
+  _BuildingTree({required this.id, required this.name, required this.floors});
+}
+
+class _FloorTree {
+  final String id;
+  final String name;
+  final List<String> areas;
+  _FloorTree({required this.id, required this.name, required this.areas});
+}
 
 class AdminMasterDataTab extends StatefulWidget {
   const AdminMasterDataTab({super.key});
@@ -16,20 +30,16 @@ class AdminMasterDataTab extends StatefulWidget {
 }
 
 class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
-  final _buildingRepo = BuildingRepository();
-  final _categoryRepo = CategoryRepository();
-  List<Building> _buildings = [];
+  List<_BuildingTree> _buildings = [];
   List<ReportCategory> _categories = [];
   bool _isLoading = true;
   bool _hasError = false;
   int? _expandedBuilding;
 
-
-
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -38,12 +48,39 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
       _isLoading = true;
     });
     try {
-      final b = await _buildingRepo.getAll();
-      final c = await _categoryRepo.getAll();
+      final locProvider = context.read<LocationProvider>();
+      final catProvider = context.read<CategoryProvider>();
+      await Future.wait([
+        locProvider.loadBuildings(),
+        catProvider.load(),
+      ]);
+      if (!mounted) return;
+      final buildingMaps = List<Map<String, dynamic>>.from(locProvider.buildings);
+      final buildings = <_BuildingTree>[];
+      for (final bMap in buildingMaps) {
+        final bid = bMap['id'] as String;
+        final bName = bMap['name'] as String? ?? '';
+        await locProvider.selectBuilding(bMap);
+        final floorMaps = List<Map<String, dynamic>>.from(locProvider.floors);
+        final floors = <_FloorTree>[];
+        for (final fMap in floorMaps) {
+          final fid = fMap['id'] as String;
+          final fName = fMap['name'] as String? ?? '';
+          await locProvider.selectFloor(fMap);
+          final areas = locProvider.areas
+              .map((a) => a['name'] as String? ?? '')
+              .toList();
+          floors.add(_FloorTree(id: fid, name: fName, areas: areas));
+        }
+        buildings.add(_BuildingTree(id: bid, name: bName, floors: floors));
+      }
+      final catMaps = catProvider.categories;
+      final categories =
+          catMaps.map((m) => ReportCategory.fromJson(m)).toList();
       if (!mounted) return;
       setState(() {
-        _buildings = b;
-        _categories = c;
+        _buildings = buildings;
+        _categories = categories;
       });
     } catch (e) {
       debugPrint('AdminMasterDataTab._load error: $e');
@@ -76,19 +113,24 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
       ),
     );
     if (confirmed == true) {
-      await _buildingRepo.delete(index);
+      final provider = context.read<LocationProvider>();
+      await provider.delete(_buildings[index].id);
       if (!mounted) return;
       if (_expandedBuilding == index) _expandedBuilding = null;
       _load();
     }
   }
 
-  void _showBuildingSheet({int? index, Building? building}) {
+  void _showBuildingSheet({int? index, _BuildingTree? building}) {
     showBuildingSheet(
       context: context,
-      repository: _buildingRepo,
-      index: index,
-      building: building,
+      provider: context.read<LocationProvider>(),
+      buildingId: building?.id,
+      buildingName: building?.name,
+      existingFloors: building?.floors.map((f) => {
+        'name': f.name,
+        'areas': f.areas,
+      }).toList(),
       onDataChanged: _load,
     );
   }
@@ -96,9 +138,13 @@ class _AdminMasterDataTabState extends State<AdminMasterDataTab> {
   void _showCategorySheet({int? index, ReportCategory? category}) {
     showCategorySheet(
       context: context,
-      repository: _categoryRepo,
-      index: index,
-      category: category,
+      provider: context.read<CategoryProvider>(),
+      categoryId: index != null && category != null
+          ? '$index'
+          : null,
+      categoryName: category?.name,
+      categoryIcon: category?.icon,
+      categoryColor: category?.color,
       onDataChanged: _load,
     );
   }

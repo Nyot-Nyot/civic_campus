@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/models/user.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
+import 'package:civic_campus/data/providers/user_provider.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
-import 'package:civic_campus/data/repositories/user_repository.dart';
 import 'package:civic_campus/widgets/admin_incident_card.dart';
 import 'package:civic_campus/widgets/filter_dropdown.dart';
 import 'package:civic_campus/widgets/state_views.dart';
@@ -25,10 +25,9 @@ class SharedIncidentListTab extends StatefulWidget {
 }
 
 class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
-  final _repo = IncidentRepository();
-  final _userRepo = UserRepository();
   List<Incident> _incidents = [];
   List<String> _staffNames = [];
+  Map<String, String> _staffData = {};
   bool _isLoading = true;
   bool _hasError = false;
   late String _activeFilter;
@@ -56,7 +55,7 @@ class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
     super.initState();
     _activeFilter = widget.initialStatusFilter;
     _activePriorityFilter = widget.initialPriorityFilter;
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -65,15 +64,20 @@ class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
       _isLoading = true;
     });
     try {
-      final results = await Future.wait([
-        _repo.getAll(),
-        _userRepo.getAllUsers(),
+      final incProvider = context.read<IncidentProvider>();
+      final userProvider = context.read<UserProvider>();
+      await Future.wait([
+        incProvider.loadAll(),
+        userProvider.load(role: 'Maintenance Staff'),
       ]);
       if (!mounted) return;
-      final users = results[1] as List<User>;
+      final incidentMaps = incProvider.incidents;
+      final users = userProvider.users;
+      final staff = users.where((u) => u['role'] == 'Maintenance Staff').toList();
       setState(() {
-        _incidents = results[0] as List<Incident>;
-        _staffNames = users.where((u) => u.role == 'Staff').map((u) => u.name).toList();
+        _incidents = incidentMaps.map((m) => Incident.fromJson(m)).toList();
+        _staffNames = staff.map((u) => u['name'] as String).toList();
+        _staffData = {for (var s in staff) s['name'] as String: s['id'] as String};
       });
     } catch (e) {
       debugPrint('SharedIncidentListTab._load error: $e');
@@ -161,20 +165,21 @@ class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () async {
+                          final staffId = _staffData[name];
+                          if (staffId == null) return;
                           Navigator.of(sheetContext).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Menugaskan ke $name...')),
                           );
-                          final ok = await _repo.updateStatus(
+                          final error = await context.read<IncidentProvider>().updateStatus(
                             item.id,
                             statusAssigned,
-                            notes: 'Ditugaskan ke $name',
-                            assignedTo: name,
+                            assignedTo: staffId,
                           );
                           if (!mounted) return;
-                          if (!ok) {
+                          if (error != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Laporan tidak ditemukan.')),
+                              SnackBar(content: Text('Gagal: $error')),
                             );
                             return;
                           }

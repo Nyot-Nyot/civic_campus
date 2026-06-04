@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
-import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/data/models/category.dart';
 
 class CategoryStep extends StatelessWidget {
   final String? selectedCategory;
   final ValueChanged<String> onCategorySelected;
+  final List<ReportCategory> categories;
 
   const CategoryStep({
     super.key,
     required this.selectedCategory,
     required this.onCategorySelected,
+    required this.categories,
   });
 
   @override
@@ -23,9 +25,9 @@ class CategoryStep extends StatelessWidget {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: allReportCategories.length,
+      itemCount: categories.length,
       itemBuilder: (context, index) {
-        final category = allReportCategories[index];
+        final category = categories[index];
         final isSelected = selectedCategory == category.name;
         return Material(
           color: Colors.transparent,

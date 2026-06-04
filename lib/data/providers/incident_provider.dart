@@ -63,8 +63,8 @@ class IncidentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> updateStatus(String id, String status, {String? assignedTo}) async {
-    final response = await _api.updateStatus(id, status, assignedTo: assignedTo);
+  Future<String?> updateStatus(String id, String status, {String? assignedTo, String? priorityLabel}) async {
+    final response = await _api.updateStatus(id, status, assignedTo: assignedTo, priorityLabel: priorityLabel);
     if (response.isError) return response.error;
     await loadAll();
     return null;

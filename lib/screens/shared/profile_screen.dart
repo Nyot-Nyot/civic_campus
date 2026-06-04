@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:civic_campus/data/models/incident.dart';
 import 'package:civic_campus/data/models/user.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
-import 'package:civic_campus/data/dummy_data.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/auth_provider.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/widgets/logout_sheet.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 import 'package:civic_campus/screens/auth/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final User? user;
+  final Object? user;
 
   const ProfileScreen({super.key, this.user});
 
   @override
   Widget build(BuildContext context) {
-    return _ProfileBody(user: user ?? currentUser);
+    User? resolvedUser;
+    if (user is User) {
+      resolvedUser = user as User;
+    } else if (user is Map<String, dynamic>) {
+      resolvedUser = User.fromJson(user as Map<String, dynamic>);
+    }
+    return _ProfileBody(user: resolvedUser);
   }
 }
 
 class _ProfileBody extends StatefulWidget {
-  final User user;
+  final User? user;
 
-  const _ProfileBody({required this.user});
+  const _ProfileBody({this.user});
 
   @override
   State<_ProfileBody> createState() => _ProfileBodyState();
@@ -31,11 +37,10 @@ class _ProfileBody extends StatefulWidget {
 
 class _ProfileBodyState extends State<_ProfileBody> {
   bool _notificationsEnabled = true;
-  final _incidentRepo = IncidentRepository();
 
   static const _roleStyles = {
     'Student': (Color(0xFFEFF6FF), Color(0xFF3B82F6)),
-    'Staff': (Color(0xFFD1FAE5), Color(0xFF10B981)),
+    'Maintenance Staff': (Color(0xFFD1FAE5), Color(0xFF10B981)),
     'Facility Admin': (Color(0xFFFFEDD5), Color(0xFFF97316)),
     'Super Admin': (Color(0xFFF3E8FF), Color(0xFF8B5CF6)),
   };
@@ -49,35 +54,60 @@ class _ProfileBodyState extends State<_ProfileBody> {
   int _inProgressTasks = 0;
   int _overdueTasks = 0;
   bool _isLoadingStats = true;
-  bool get _isStaff => widget.user.role == 'Staff';
+
+  User get _user {
+    if (widget.user != null) return widget.user!;
+    final profile = context.read<AuthProvider>().profile;
+    if (profile != null) return User.fromJson(profile);
+    return const User(name: 'User', role: 'Student', email: '');
+  }
+
+  bool get _isStaff => _user.role == 'Maintenance Staff';
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStats());
   }
 
   Future<void> _loadStats() async {
+    final incProvider = context.read<IncidentProvider>();
+    await incProvider.loadAll();
+    if (!mounted) return;
+    final items = incProvider.incidents;
     if (_isStaff) {
-      final tasks = await _incidentRepo.getAssignedTo(widget.user.name);
+      final tasks = items.where((i) {
+        final assignedTo = i['assigned_to_name'] as String? ??
+            i['assigned_to'] as String?;
+        return assignedTo == _user.name;
+      }).toList();
       if (!mounted) return;
       setState(() {
         _totalIncidents = tasks.length;
-        _inProgressTasks = tasks.where((t) => t.status == statusInProgress).length;
-        _overdueTasks = tasks.where((t) => t.isOverdue()).length;
+        _inProgressTasks = tasks.where((t) => t['status'] == 'In Progress').length;
+        _overdueTasks = tasks.where((t) {
+          final status = t['status'] as String? ?? '';
+          if ({'Resolved', 'Closed'}.contains(status)) return false;
+          final createdAtStr = t['created_at'] as String? ?? '';
+          final createdAt = DateTime.tryParse(createdAtStr) ?? DateTime.now();
+          return DateTime.now().difference(createdAt) > const Duration(hours: 24);
+        }).length;
         _isLoadingStats = false;
       });
     } else {
-      final results = await Future.wait([
-        _incidentRepo.getAll(),
-        _incidentRepo.getActive(),
-        _incidentRepo.getCompleted(),
-      ]);
+      final activeCount = items.where((i) {
+        final status = i['status'] as String? ?? '';
+        return status != 'Resolved' && status != 'Closed';
+      }).length;
+      final completedCount = items.where((i) {
+        final status = i['status'] as String? ?? '';
+        return status == 'Resolved' || status == 'Closed';
+      }).length;
       if (!mounted) return;
       setState(() {
-        _totalIncidents = (results[0] as List).length;
-        _activeIncidents = (results[1] as List).length;
-        _completedIncidents = (results[2] as List).length;
+        _totalIncidents = items.length;
+        _activeIncidents = activeCount;
+        _completedIncidents = completedCount;
         _isLoadingStats = false;
       });
     }
@@ -86,10 +116,13 @@ class _ProfileBodyState extends State<_ProfileBody> {
   void _confirmLogout(BuildContext context) {
     LogoutSheet.show(
       context,
-      () => Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      ),
+      () {
+        context.read<AuthProvider>().signOut();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      },
     );
   }
 
@@ -131,7 +164,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   Widget _buildProfileHeader() {
-    final user = widget.user;
+    final user = _user;
     final style = _roleStyle(user.role);
     return Card(
       margin: EdgeInsets.zero,

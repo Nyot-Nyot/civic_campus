@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 
 class AdminOverviewTab extends StatefulWidget {
@@ -14,7 +15,6 @@ class AdminOverviewTab extends StatefulWidget {
 }
 
 class _AdminOverviewTabState extends State<AdminOverviewTab> {
-  final _repo = IncidentRepository();
   bool _isLoading = true;
   bool _hasError = false;
 
@@ -26,7 +26,7 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -35,18 +35,30 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
       _isLoading = true;
     });
     try {
-      final items = await _repo.getAll();
+      final provider = context.read<IncidentProvider>();
+      await provider.loadAll();
       if (!mounted) return;
+      final items = provider.incidents;
       int high = 0, open = 0, overdue = 0;
       final staff = <String>{};
       for (final i in items) {
-        if (i.status == statusOpen && i.assignedTo == null) open++;
-        if (i.isOverdue()) overdue++;
-        if (i.priority == 'Tinggi' && i.status != statusClosed) high++;
-        if (i.assignedTo != null &&
-            i.status != statusResolved &&
-            i.status != statusClosed) {
-          staff.add(i.assignedTo!);
+        final status = i['status'] as String? ?? '';
+        final assignedTo = i['assigned_to_name'] as String? ??
+            i['assigned_to'] as String?;
+        final priority = i['priority_label'] as String? ?? 'Sedang';
+        final createdAtStr = i['created_at'] as String? ?? '';
+        final createdAt =
+            DateTime.tryParse(createdAtStr) ?? DateTime.now();
+        if (status == statusOpen && assignedTo == null) open++;
+        final isOverdue = !{statusResolved, statusClosed}.contains(status) &&
+            DateTime.now().difference(createdAt) >
+                const Duration(hours: 24);
+        if (isOverdue) overdue++;
+        if (priority == 'Tinggi' && status != statusClosed) high++;
+        if (assignedTo != null &&
+            status != statusResolved &&
+            status != statusClosed) {
+          staff.add(assignedTo);
         }
       }
       setState(() {

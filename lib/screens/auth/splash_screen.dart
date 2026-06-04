@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'package:civic_campus/data/providers/auth_provider.dart';
 import 'package:civic_campus/screens/auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,11 +22,36 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer(SplashScreen.duration, () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+    _timer = Timer(SplashScreen.duration, _checkSession);
+  }
+
+  Future<void> _checkSession() async {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+
+    if (auth.isAuthenticated) {
+      await auth.loadProfile();
+      if (!mounted) return;
+
+      final role = auth.profile?['role'] as String?;
+      String route;
+      switch (role) {
+        case 'Super Admin':
+          route = '/super-admin-home';
+          break;
+        case 'Facility Admin':
+          route = '/admin-home';
+          break;
+        case 'Maintenance Staff':
+          route = '/staff-home';
+          break;
+        default:
+          route = '/student-home';
       }
-    });
+      Navigator.of(context).pushReplacementNamed(route);
+    } else {
+      Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+    }
   }
 
   @override

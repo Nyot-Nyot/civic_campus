@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/screens/staff/widgets/staff_task_card.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
@@ -16,7 +17,6 @@ class StaffMyTasksTab extends StatefulWidget {
 }
 
 class _StaffMyTasksTabState extends State<StaffMyTasksTab> {
-  final _repo = IncidentRepository();
   List<Incident> _tasks = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -37,7 +37,7 @@ class _StaffMyTasksTabState extends State<StaffMyTasksTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -46,10 +46,18 @@ class _StaffMyTasksTabState extends State<StaffMyTasksTab> {
       _isLoading = true;
     });
     try {
-      final items = await _repo.getAssignedTo(widget.staffName);
+      final provider = context.read<IncidentProvider>();
+      await provider.loadAll();
+      if (!mounted) return;
+      final allIncidents = provider.incidents;
+      final assigned = allIncidents.where((i) {
+        final assignedTo = i['assigned_to_name'] as String? ??
+            i['assigned_to'] as String?;
+        return assignedTo == widget.staffName;
+      }).toList();
       if (!mounted) return;
       setState(() {
-        _tasks = items;
+        _tasks = assigned.map((m) => Incident.fromJson(m)).toList();
         _isLoading = false;
       });
     } catch (e) {

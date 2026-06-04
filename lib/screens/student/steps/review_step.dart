@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:civic_campus/data/constants/app_constants.dart';
-import 'package:civic_campus/data/dummy_data.dart';
 import 'package:civic_campus/data/models/incident.dart';
 
 class ReviewStep extends StatelessWidget {
@@ -16,6 +15,7 @@ class ReviewStep extends StatelessWidget {
   final String? duplicateAction;
   final VoidCallback onCheckDuplicates;
   final ValueChanged<String> onDuplicateAction;
+  final List<Map<String, dynamic>> duplicateResults;
 
   const ReviewStep({
     super.key,
@@ -30,6 +30,7 @@ class ReviewStep extends StatelessWidget {
     required this.duplicateAction,
     required this.onCheckDuplicates,
     required this.onDuplicateAction,
+    required this.duplicateResults,
   });
 
   @override
@@ -76,6 +77,7 @@ class ReviewStep extends StatelessWidget {
             selectedCategory: selectedCategory,
             selectedBuilding: selectedBuilding,
             selectedFloor: selectedFloor,
+            duplicates: duplicateResults,
           ),
           const SizedBox(height: 20),
           _ConfirmRadio(
@@ -159,25 +161,48 @@ class _DuplicateSuggestions extends StatelessWidget {
   final String? selectedCategory;
   final String? selectedBuilding;
   final String? selectedFloor;
+  final List<Map<String, dynamic>> duplicates;
 
   const _DuplicateSuggestions({
     required this.selectedCategory,
     required this.selectedBuilding,
     required this.selectedFloor,
+    required this.duplicates,
   });
 
-  int _computeMatchScore(String category, String? building, String? floor) {
+  int _computeMatchScore(Map<String, dynamic> dup) {
     int score = 0;
-    if (selectedCategory == category) score += scoreCategoryMatch;
-    if (selectedBuilding != null && selectedBuilding == building) score += scoreBuildingMatch;
-    if (selectedFloor != null && selectedFloor == floor) score += scoreFloorMatch;
+    if (selectedCategory == dup['category_name']) score += scoreCategoryMatch;
+    if (selectedBuilding != null && selectedBuilding == dup['building_name']) score += scoreBuildingMatch;
+    if (selectedFloor != null && selectedFloor == dup['floor_name']) score += scoreFloorMatch;
     return score;
   }
 
   @override
   Widget build(BuildContext context) {
-    final scored = duplicateSuggestions
-        .map((s) => (suggestion: s, score: _computeMatchScore(s.category, s.building, s.floor)))
+    if (duplicates.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text('Tidak ditemukan laporan serupa',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final scored = duplicates
+        .map((d) => (data: d, score: _computeMatchScore(d)))
         .toList()
       ..sort((a, b) => b.score.compareTo(a.score));
 
@@ -200,11 +225,15 @@ class _DuplicateSuggestions extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         ...scored.map((item) {
-          final s = item.suggestion;
+          final data = item.data;
           final score = item.score;
+          final title = data['title'] as String? ?? '';
+          final location = data['location_name'] as String? ?? '';
+          final status = data['status'] as String? ?? '';
+          final confirmCount = data['confirm_count'] as int? ?? 0;
           final isStrong = score >= scoreStrongMatchThreshold;
           return Padding(
-            padding: EdgeInsets.only(bottom: s != scored.last.suggestion ? 10 : 0),
+            padding: EdgeInsets.only(bottom: data != scored.last.data ? 10 : 0),
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -220,7 +249,7 @@ class _DuplicateSuggestions extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(s.title,
+                        child: Text(title,
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827))),
                       ),
                       Container(
@@ -254,22 +283,22 @@ class _DuplicateSuggestions extends StatelessWidget {
                               children: [
                                 const Icon(Icons.location_on, size: 12, color: Color(0xFF9CA3AF)),
                                 const SizedBox(width: 4),
-                                Text(s.location,
+                                Text(location,
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: s.status == statusInProgress
+                                    color: status == statusInProgress
                                         ? const Color(0xFFFFEDD5)
                                         : const Color(0xFFEFF6FF),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text(s.status,
+                                  child: Text(status,
                                       style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
-                                          color: s.status == statusInProgress
+                                          color: status == statusInProgress
                                               ? const Color(0xFFC2410C)
                                               : const Color(0xFF1D4ED8))),
                                 ),
@@ -280,7 +309,7 @@ class _DuplicateSuggestions extends StatelessWidget {
                               children: [
                                 const Icon(Icons.people, size: 12, color: Color(0xFF9CA3AF)),
                                 const SizedBox(width: 4),
-                                Text('Dikonfirmasi ${s.confirmCount} mahasiswa',
+                                Text('Dikonfirmasi $confirmCount mahasiswa',
                                     style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
                               ],
                             ),

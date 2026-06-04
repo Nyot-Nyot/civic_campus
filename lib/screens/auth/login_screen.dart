@@ -1,15 +1,7 @@
-import 'package:civic_campus/app_messenger.dart';
-import 'package:civic_campus/screens/admin/admin_home_screen.dart';
-import 'package:civic_campus/screens/staff/staff_home_screen.dart';
-import 'package:civic_campus/screens/student/student_home_screen.dart';
-import 'package:civic_campus/screens/super_admin/super_admin_home_screen.dart';
-import 'package:civic_campus/theme/app_theme.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-// Enable only when actively debugging login UI locally.
-// Keep false for normal development and production builds.
-const bool kEnableDeveloperAutofill = true;
+import 'package:civic_campus/data/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
@@ -28,15 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    if (kDebugMode && kEnableDeveloperAutofill) {
-      _emailController.text = 'developer@example.com';
-      _passwordController.text = 'password123';
-    }
-  }
-
-  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -46,20 +29,53 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _onLoginPressed() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final navigator = Navigator.of(context);
     setState(() => _isLoading = true);
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-      rootScaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(
-          content: Text('Login berhasil — menuju Student Home.'),
-        ),
+      final auth = context.read<AuthProvider>();
+      final error = await auth.signIn(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-      navigator.pushReplacementNamed(StudentHomeScreen.routeName);
+
+      if (!mounted) return;
+
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      await auth.loadProfile();
+      if (!mounted) return;
+
+      final role = auth.profile?['role'] as String?;
+      String route;
+      switch (role) {
+        case 'Super Admin':
+          route = '/super-admin-home';
+          break;
+        case 'Facility Admin':
+          route = '/admin-home';
+          break;
+        case 'Maintenance Staff':
+          route = '/staff-home';
+          break;
+        default:
+          route = '/student-home';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login berhasil!')),
+      );
+      Navigator.of(context).pushReplacementNamed(route);
     } catch (e) {
       if (!mounted) return;
-      rootScaffoldMessengerKey.currentState?.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login gagal: ${e.toString()}'),
           backgroundColor: const Color(0xFFEF4444),
@@ -202,67 +218,74 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 32),
+              _buildQuickLoginSection(),
               const SizedBox(height: 28),
-              const Text(
-                'Atau masuk cepat sebagai:',
-                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: const [
-                  _RoleButton(label: 'Student'),
-                  _RoleButton(label: 'Staff'),
-                  _RoleButton(label: 'Facility Admin'),
-                  _RoleButton(label: 'Super Admin'),
-                ],
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                'Demo UI\\nLembar ini hanya menggunakan data dummy sebagai contoh tampilan aplikasi awal.',
-                style: TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 13,
-                  height: 1.6,
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _RoleButton extends StatelessWidget {
-  final String label;
+  Widget _buildQuickLoginSection() {
+    const roles = [
+      ('Student', 'andi.mahasiswa@campus.id', Color(0xFF3B82F6)),
+      ('Maintenance Staff', 'budi.teknisi@campus.id', Color(0xFF10B981)),
+      ('Facility Admin', 'dewi.admin@campus.id', Color(0xFFF97316)),
+      ('Super Admin', 'super.admin@campus.id', Color(0xFF8B5CF6)),
+    ];
 
-  const _RoleButton({required this.label});
-
-  void _onTap(BuildContext context) {
-    final navigator = Navigator.of(context);
-    switch (label) {
-      case 'Staff':
-        navigator.pushReplacementNamed(StaffHomeScreen.routeName);
-        return;
-      case 'Facility Admin':
-        navigator.pushReplacementNamed(AdminHomeScreen.routeName);
-        return;
-      case 'Super Admin':
-        navigator.pushReplacementNamed(SuperAdminHomeScreen.routeName);
-        return;
-      default:
-        navigator.pushReplacementNamed(StudentHomeScreen.routeName);
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Testing Tools',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF9CA3AF),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...roles.map(
+          (r) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: ElevatedButton.icon(
+                key: Key('quick_login_${r.$1.replaceAll(' ', '_')}'),
+                onPressed: () => _quickLogin(r.$2, 'password123'),
+                icon: Icon(Icons.flash_on_rounded, size: 18, color: r.$3),
+                label: Text(
+                  r.$1,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: r.$3.withValues(alpha: 0.1),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: r.$3.withValues(alpha: 0.25)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: CivicCampusTheme.roleButtonStyle,
-      onPressed: () => _onTap(context),
-      child: Text(label),
-    );
+  Future<void> _quickLogin(String email, String password) async {
+    _emailController.text = email;
+    _passwordController.text = password;
+    await _onLoginPressed();
   }
 }

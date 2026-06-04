@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/widgets/incident_card.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
@@ -26,45 +27,34 @@ class _MyIncidentsBody extends StatefulWidget {
 class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   int _selectedFilter = 0;
   static const _filters = reportFilters;
-  List<Incident> _allIncidents = [];
-  bool _isLoading = true;
-
-  final _incidentRepo = IncidentRepository();
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<IncidentProvider>().loadAll();
+    });
   }
 
-  Future<void> _loadData() async {
-    try {
-      final incidents = await _incidentRepo.getAll();
-      if (!mounted) return;
-      setState(() {
-        _allIncidents = incidents;
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('_loadData error: $e');
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-    }
+  List<Incident> get _incidents {
+    final provider = context.read<IncidentProvider>();
+    return provider.incidents.map((m) => Incident.fromJson(m)).toList();
   }
 
   List<Incident> get _filtered {
-    if (_isLoading) return [];
+    final all = _incidents;
+    if (all.isEmpty) return [];
     switch (_selectedFilter) {
       case 1:
-        return _allIncidents
+        return all
             .where((i) => !_isClosedOrResolved(i.status))
             .toList();
       case 2:
-        return _allIncidents
+        return all
             .where((i) => _isClosedOrResolved(i.status))
             .toList();
       default:
-        return _allIncidents;
+        return all;
     }
   }
 
@@ -72,12 +62,17 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
     return status == statusClosed || status == statusResolved;
   }
 
+  Future<void> _refresh() async {
+    await context.read<IncidentProvider>().loadAll();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<IncidentProvider>();
     final filtered = _filtered;
 
     return RefreshIndicator(
-      onRefresh: _loadData,
+      onRefresh: _refresh,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -150,7 +145,7 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: _isLoading
+            child: provider.isLoading
                 ? const LoadingView()
                 : filtered.isEmpty
                     ? ListView(

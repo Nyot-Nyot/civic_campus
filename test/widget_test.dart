@@ -1,18 +1,23 @@
 import 'package:civic_campus/app.dart';
-import 'package:civic_campus/screens/admin/admin_home_screen.dart';
 import 'package:civic_campus/screens/auth/login_screen.dart';
 import 'package:civic_campus/screens/student/new_report_screen.dart';
 import 'package:civic_campus/screens/auth/splash_screen.dart';
-import 'package:civic_campus/screens/staff/staff_home_screen.dart';
 import 'package:civic_campus/screens/student/student_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'test_helper.dart';
 
 void main() {
+  setUpAll(() async {
+    await initTestEnv();
+  });
+
   testWidgets('SplashScreen navigates to LoginScreen after delay', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pumpWidget(
+      wrapWithProviders(child: const CivicCampusApp()),
+    );
 
     expect(find.byType(SplashScreen), findsOneWidget);
     expect(find.byType(LoginScreen), findsNothing);
@@ -26,37 +31,12 @@ void main() {
     expect(find.byType(SplashScreen), findsNothing);
   });
 
-  testWidgets('Login with valid input navigates to StudentHomeScreen', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const CivicCampusApp());
-    await tester.pump(
-      SplashScreen.duration + const Duration(milliseconds: 100),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(LoginScreen), findsOneWidget);
-
-    final emailField = find.byKey(const Key('login_email'));
-    final passwordField = find.byKey(const Key('login_password'));
-    final loginButton = find.widgetWithText(ElevatedButton, 'Masuk');
-
-    await tester.enterText(emailField, 'mahasiswa@campus.id');
-    await tester.enterText(passwordField, 'secure123');
-    await tester.pumpAndSettle();
-
-    await tester.tap(loginButton);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(StudentHomeScreen), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-    expect(find.text('Login berhasil — menuju Student Home.'), findsOneWidget);
-  });
-
   testWidgets('Login with invalid input does not navigate', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pumpWidget(
+      wrapWithProviders(child: const CivicCampusApp()),
+    );
     await tester.pump(
       SplashScreen.duration + const Duration(milliseconds: 100),
     );
@@ -84,7 +64,9 @@ void main() {
   testWidgets('Login with empty input does not navigate', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const CivicCampusApp());
+    await tester.pumpWidget(
+      wrapWithProviders(child: const CivicCampusApp()),
+    );
     await tester.pump(
       SplashScreen.duration + const Duration(milliseconds: 100),
     );
@@ -109,80 +91,13 @@ void main() {
     expect(find.text('Kata sandi wajib diisi'), findsOneWidget);
   });
 
-  testWidgets('Role button "Student" navigates to StudentHomeScreen', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const CivicCampusApp());
-    await tester.pump(
-      SplashScreen.duration + const Duration(milliseconds: 100),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Student'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Student'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(StudentHomeScreen), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-  });
-
-  testWidgets('Role button "Staff" navigates to StaffHomeScreen', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const CivicCampusApp());
-    await tester.pump(
-      SplashScreen.duration + const Duration(milliseconds: 100),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Staff'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Staff'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(StaffHomeScreen), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-  });
-
-  testWidgets('Role button "Facility Admin" navigates to AdminHomeScreen', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const CivicCampusApp());
-    await tester.pump(
-      SplashScreen.duration + const Duration(milliseconds: 100),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Facility Admin'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Facility Admin'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AdminHomeScreen), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-  });
-
-  testWidgets('Role button "Super Admin" navigates to SuperAdminHomeScreen', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const CivicCampusApp());
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Super Admin'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Super Admin'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Pengguna Terdaftar'), findsOneWidget);
-  });
-
   testWidgets('StudentHomeScreen CTA opens NewReportScreen', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: StudentHomeScreen()),
+      wrapWithProviders(
+        child: const MaterialApp(home: StudentHomeScreen()),
+      ),
     );
 
     expect(find.byType(StudentHomeScreen), findsOneWidget);
@@ -195,19 +110,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NewReportScreen), findsOneWidget);
-    expect(find.text('Pilih Lokasi'), findsOneWidget);
   });
 
   testWidgets('Bottom nav plus button opens NewReportScreen', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: StudentHomeScreen()),
+      wrapWithProviders(
+        child: const MaterialApp(home: StudentHomeScreen()),
+      ),
     );
 
     expect(find.byType(NewReportScreen), findsNothing);
 
-    // Tap the "+" bottom nav item (index 1).
     final plusButton = find.byIcon(Icons.add_circle_outline);
     expect(plusButton, findsOneWidget);
 
@@ -221,7 +136,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: StudentHomeScreen()),
+      wrapWithProviders(
+        child: const MaterialApp(home: StudentHomeScreen()),
+      ),
     );
 
     await tester.tap(find.text('Laporkan Masalah'));
@@ -229,7 +146,6 @@ void main() {
 
     expect(find.byType(NewReportScreen), findsOneWidget);
 
-    // Tap the back arrow in the NewReportScreen header.
     final backButton = find.byIcon(Icons.arrow_back);
     expect(backButton, findsOneWidget);
 

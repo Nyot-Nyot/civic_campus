@@ -55,7 +55,7 @@ class IncidentCard extends StatelessWidget {
                 children: [
                   _StatusBadge(status: incident.status),
                   const SizedBox(width: 10),
-                  Text(incident.timeAgo,
+                    Text(formatTimeAgo(incident.timeAgo),
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12)),
                 ],
               ),
@@ -106,7 +106,7 @@ class IncidentCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.access_time, size: 12, color: Color(0xFF9CA3AF)),
                   const SizedBox(width: 4),
-                  Text(incident.timeAgo,
+                    Text(formatTimeAgo(incident.timeAgo),
                       style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
                   if (incident.confirmationCount > 0) ...[
                     const SizedBox(width: 14),

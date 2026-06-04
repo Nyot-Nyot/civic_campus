@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:civic_campus/data/dummy_data.dart';
 import 'package:civic_campus/widgets/app_bottom_nav.dart';
 import 'package:civic_campus/screens/shared/profile_screen.dart';
 import 'package:civic_campus/screens/shared/incident/incident_list_tab.dart';
@@ -36,7 +35,7 @@ class _SuperAdminHomeScreenState extends State<SuperAdminHomeScreen> {
         const SuperAdminUsersTab(),
         const SharedIncidentListTab(),
         const SuperAdminSystemConfigTab(),
-        const ProfileScreen(user: superAdminUser),
+        const ProfileScreen(),
       ],
     );
   }

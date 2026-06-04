@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 
-import 'package:civic_campus/data/models/building.dart';
-import 'package:civic_campus/data/repositories/building_repository.dart';
+import 'package:civic_campus/data/providers/location_provider.dart';
 
 void showBuildingSheet({
   required BuildContext context,
-  required BuildingRepository repository,
-  int? index,
-  Building? building,
+  required LocationProvider provider,
+  String? buildingId,
+  String? buildingName,
+  List<Map<String, dynamic>>? existingFloors,
   required VoidCallback onDataChanged,
 }) {
-  final isEditing = building != null;
-  final nameController = TextEditingController(text: building?.name ?? '');
+  final isEditing = buildingId != null;
+  final nameController = TextEditingController(text: buildingName ?? '');
   final floorNames = <TextEditingController>[];
   final floorAreas = <TextEditingController>[];
 
-  if (isEditing) {
-    for (final f in building.floors) {
-      floorNames.add(TextEditingController(text: f.name));
-      floorAreas.add(TextEditingController(text: f.areas.join(', ')));
+  if (isEditing && existingFloors != null) {
+    for (final f in existingFloors) {
+      floorNames.add(TextEditingController(text: f['name'] as String? ?? ''));
+      final areasList = (f['areas'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .join(', ') ??
+          '';
+      floorAreas.add(TextEditingController(text: areasList));
     }
   } else {
     floorNames.add(TextEditingController());
@@ -145,7 +149,7 @@ void showBuildingSheet({
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            await repository.delete(index!);
+                            await provider.delete(buildingId);
                             if (!context.mounted) return;
                             Navigator.pop(ctx);
                             onDataChanged();
@@ -165,23 +169,28 @@ void showBuildingSheet({
                         onPressed: () async {
                           final name = nameController.text.trim();
                           if (name.isEmpty) return;
-                          final floors = <Floor>[];
-                          for (var i = 0; i < floorNames.length; i++) {
-                            final fn = floorNames[i].text.trim();
-                            if (fn.isEmpty) continue;
-                            final areas = floorAreas[i].text
-                                .split(',')
-                                .map((e) => e.trim())
-                                .where((e) => e.isNotEmpty)
-                                .toList();
-                            floors.add(Floor(name: fn, areas: areas));
-                          }
-                          if (floors.isEmpty) return;
-                          final newBuilding = Building(name: name, floors: floors);
+
                           if (isEditing) {
-                            await repository.update(index!, newBuilding);
-                          } else {
-                            await repository.add(newBuilding);
+                            await provider.update(buildingId, {
+                              'name': name,
+                              'type': 'Building',
+                            });
+                            if (!context.mounted) return;
+                            Navigator.pop(ctx);
+                            onDataChanged();
+                            return;
+                          }
+
+                          final err = await provider.create({
+                            'name': name,
+                            'type': 'Building',
+                          });
+                          if (err != null) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Gagal membuat gedung.')),
+                            );
+                            return;
                           }
                           if (!context.mounted) return;
                           Navigator.pop(ctx);

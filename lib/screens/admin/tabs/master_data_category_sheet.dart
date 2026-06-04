@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 
-import 'package:civic_campus/data/models/category.dart';
-import 'package:civic_campus/data/repositories/category_repository.dart';
+import 'package:civic_campus/data/providers/category_provider.dart';
 import 'package:civic_campus/screens/admin/widgets/color_picker_grid.dart';
 import 'package:civic_campus/screens/admin/widgets/icon_picker_grid.dart';
 
 void showCategorySheet({
   required BuildContext context,
-  required CategoryRepository repository,
-  int? index,
-  ReportCategory? category,
+  required CategoryProvider provider,
+  String? categoryId,
+  String? categoryName,
+  IconData? categoryIcon,
+  Color? categoryColor,
   required VoidCallback onDataChanged,
 }) {
-  final isEditing = category != null;
-  final nameController = TextEditingController(text: category?.name ?? '');
-  var selectedIcon = category?.icon ?? IconPickerGrid.icons.first;
-  var selectedColor = category?.color ?? ColorPickerGrid.colors.first;
+  final isEditing = categoryId != null;
+  final nameController = TextEditingController(text: categoryName ?? '');
+  var selectedIcon = categoryIcon ?? IconPickerGrid.icons.first;
+  var selectedColor = categoryColor ?? ColorPickerGrid.colors.first;
 
   showModalBottomSheet(
     context: context,
@@ -74,7 +75,7 @@ void showCategorySheet({
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            await repository.delete(index!);
+                            await provider.delete(categoryId);
                             if (!context.mounted) return;
                             Navigator.pop(ctx);
                             onDataChanged();
@@ -94,11 +95,17 @@ void showCategorySheet({
                         onPressed: () async {
                           final name = nameController.text.trim();
                           if (name.isEmpty) return;
-                          final newCat = ReportCategory(name: name, icon: selectedIcon, color: selectedColor);
+                          final colorHex = '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
                           if (isEditing) {
-                            await repository.update(index!, newCat);
+                            await provider.update(categoryId, {
+                              'name': name,
+                              'color_hex': colorHex,
+                            });
                           } else {
-                            await repository.add(newCat);
+                            await provider.create({
+                              'name': name,
+                              'color_hex': colorHex,
+                            });
                           }
                           if (!context.mounted) return;
                           Navigator.pop(ctx);

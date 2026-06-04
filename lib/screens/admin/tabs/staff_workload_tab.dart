@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 
 class AdminStaffWorkloadTab extends StatefulWidget {
@@ -12,7 +13,6 @@ class AdminStaffWorkloadTab extends StatefulWidget {
 }
 
 class _AdminStaffWorkloadTabState extends State<AdminStaffWorkloadTab> {
-  final _repo = IncidentRepository();
   bool _isLoading = true;
   bool _hasError = false;
   List<_StaffLoad> _staffLoads = [];
@@ -20,7 +20,7 @@ class _AdminStaffWorkloadTabState extends State<AdminStaffWorkloadTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -29,21 +29,33 @@ class _AdminStaffWorkloadTabState extends State<AdminStaffWorkloadTab> {
       _isLoading = true;
     });
     try {
-      final items = await _repo.getAll();
+      final provider = context.read<IncidentProvider>();
+      await provider.loadAll();
       if (!mounted) return;
+      final items = provider.incidents;
       final map = <String, _StaffLoad>{};
       for (final i in items) {
-        if (i.assignedTo == null) continue;
+        final assignedTo = i['assigned_to_name'] as String? ??
+            i['assigned_to'] as String?;
+        if (assignedTo == null) continue;
         final staff = map.putIfAbsent(
-          i.assignedTo!,
-          () => _StaffLoad(name: i.assignedTo!),
+          assignedTo,
+          () => _StaffLoad(name: assignedTo),
         );
         staff.total++;
-        if (i.status == statusAssigned || i.status == statusInProgress) {
+        final status = i['status'] as String? ?? '';
+        final createdAtStr = i['created_at'] as String? ?? '';
+        final createdAt =
+            DateTime.tryParse(createdAtStr) ?? DateTime.now();
+        if (status == statusAssigned || status == statusInProgress) {
           staff.active++;
         }
-        if (i.status == statusResolved) staff.resolved++;
-        if (i.isOverdue()) staff.overdue++;
+        if (status == statusResolved) staff.resolved++;
+        final isOverdue =
+            !{statusResolved, statusClosed}.contains(status) &&
+                DateTime.now().difference(createdAt) >
+                    const Duration(hours: 24);
+        if (isOverdue) staff.overdue++;
       }
       final sorted = map.values.toList()
         ..sort((a, b) => b.active.compareTo(a.active));
@@ -122,11 +134,11 @@ class _AdminStaffWorkloadTabState extends State<AdminStaffWorkloadTab> {
                           children: [
                             TextSpan(text: '${s.active} aktif',
                                 style: const TextStyle(color: Color(0xFF3B82F6))),
-                            const TextSpan(text: ' · '),
+                            const TextSpan(text: ' \u00b7 '),
                             TextSpan(text: '${s.resolved} selesai',
                                 style: const TextStyle(color: Color(0xFF10B981))),
                             if (s.overdue > 0) ...[
-                              const TextSpan(text: ' · '),
+                              const TextSpan(text: ' \u00b7 '),
                               TextSpan(text: '${s.overdue} terlambat',
                                   style: const TextStyle(color: Color(0xFFEF4444))),
                             ],

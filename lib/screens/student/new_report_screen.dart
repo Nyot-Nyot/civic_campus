@@ -1,6 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/models/category.dart';
+import 'package:civic_campus/data/providers/category_provider.dart';
+import 'package:civic_campus/data/providers/location_provider.dart';
+import 'package:civic_campus/data/providers/report_provider.dart';
 import 'package:civic_campus/screens/student/steps/category_step.dart';
 import 'package:civic_campus/screens/student/steps/description_step.dart';
 import 'package:civic_campus/screens/student/steps/location_step.dart';
@@ -38,11 +46,16 @@ class _NewReportScreenState extends State<NewReportScreen> {
 
   bool _duplicateChecked = false;
   String? _duplicateAction;
+  List<Map<String, dynamic>> _duplicateResults = [];
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LocationProvider>().loadBuildings();
+      context.read<CategoryProvider>().load();
+    });
     assert(
       reportStepTitles.length == reportTotalSteps,
       'reportStepTitles.length (${reportStepTitles.length}) != reportTotalSteps ($reportTotalSteps)',
@@ -89,13 +102,106 @@ class _NewReportScreenState extends State<NewReportScreen> {
     if (_currentStep > 0) setState(() => _currentStep--);
   }
 
+  void _handleBuildingSelected(String name) {
+    final provider = context.read<LocationProvider>();
+    final building = provider.buildings.firstWhere((b) => b['name'] == name);
+    provider.selectBuilding(building);
+    setState(() {
+      _selectedBuilding = name;
+      _selectedFloor = null;
+      _selectedArea = null;
+    });
+  }
+
+  void _handleFloorSelected(String name) {
+    final provider = context.read<LocationProvider>();
+    final floor = provider.floors.firstWhere((f) => f['name'] == name);
+    provider.selectFloor(floor);
+    setState(() {
+      _selectedFloor = name;
+      _selectedArea = null;
+    });
+  }
+
+  void _handleAreaSelected(String name) {
+    final provider = context.read<LocationProvider>();
+    final area = provider.areas.firstWhere((a) => a['name'] == name);
+    provider.selectArea(area);
+    setState(() => _selectedArea = name);
+  }
+
+  void _handleClearArea() {
+    final provider = context.read<LocationProvider>();
+    provider.clearSelection();
+    setState(() {
+      _selectedBuilding = null;
+      _selectedFloor = null;
+      _selectedArea = null;
+    });
+  }
+
+  Future<void> _handleCheckDuplicates() async {
+    final reportProvider = context.read<ReportProvider>();
+    final locationProvider = context.read<LocationProvider>();
+    final categoryProvider = context.read<CategoryProvider>();
+
+    final locationId = locationProvider.getSelectedLocationId() ?? '';
+    final categoryMap = categoryProvider.categories.firstWhere(
+      (c) => c['name'] == _selectedCategory,
+    );
+    final categoryId = categoryMap['id'] as String;
+
+    final results = await reportProvider.checkDuplicates(
+      locationId: locationId,
+      categoryId: categoryId,
+      description: _descriptionController.text,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _duplicateChecked = true;
+      _duplicateResults = results;
+    });
+  }
+
   void _handleSubmit() async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final reportProvider = context.read<ReportProvider>();
+    final locationProvider = context.read<LocationProvider>();
+
     setState(() => _isSubmitting = true);
-    try {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
+
+    final locationId = locationProvider.getSelectedLocationId() ?? '';
+    final locationDetails = _locationDetailsController.text;
+    final categoryProvider = context.read<CategoryProvider>();
+    final categoryMap = categoryProvider.categories.firstWhere(
+      (c) => c['name'] == _selectedCategory,
+    );
+    final categoryId = categoryMap['id'] as String;
+    final description = _descriptionController.text;
+
+    List<int>? photoBytes;
+    String? photoFileName;
+    if (_photos.isNotEmpty) {
+      final file = File(_photos.first);
+      photoBytes = await file.readAsBytes();
+      photoFileName = _photos.first.split('/').last;
+    }
+
+    final error = await reportProvider.submit(
+      locationId: locationId,
+      locationDetails: locationDetails.isEmpty ? null : locationDetails,
+      categoryId: categoryId,
+      description: description.isEmpty ? null : description,
+      photoBytes: photoBytes,
+      photoFileName: photoFileName,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (error == null) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -107,28 +213,42 @@ class _NewReportScreenState extends State<NewReportScreen> {
         ),
       );
       navigator.pop();
-    } catch (e) {
-      if (!mounted) return;
+    } else {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Terjadi kesalahan: $e'),
+          content: Text('Terjadi kesalahan: $error'),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  void _showPhotoPicker() {
-    showModalBottomSheet(
+  Future<void> _showPhotoPicker() async {
+    final picker = ImagePicker();
+    await showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      builder: (_) => PhotoPickerSheet(
-        onCamera: () => setState(() => _photos.add('mock_photo_${_photos.length + 1}')),
-        onGallery: () => setState(() => _photos.add('mock_photo_${_photos.length + 1}')),
+      builder: (ctx) => PhotoPickerSheet(
+        onCamera: () {
+          Navigator.pop(ctx);
+          Future.microtask(() async {
+            final XFile? image = await picker.pickImage(source: ImageSource.camera);
+            if (image != null && mounted) {
+              setState(() => _photos.add(image.path));
+            }
+          });
+        },
+        onGallery: () {
+          Navigator.pop(ctx);
+          Future.microtask(() async {
+            final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+            if (image != null && mounted) {
+              setState(() => _photos.add(image.path));
+            }
+          });
+        },
       ),
     );
   }
@@ -136,6 +256,22 @@ class _NewReportScreenState extends State<NewReportScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final locationProvider = context.watch<LocationProvider>();
+    final categoryProvider = context.watch<CategoryProvider>();
+
+    final buildingNames = locationProvider.buildings
+        .map((b) => b['name'] as String)
+        .toList();
+    final floorNames = locationProvider.floors
+        .map((f) => f['name'] as String)
+        .toList();
+    final areaNames = locationProvider.areas
+        .map((a) => a['name'] as String)
+        .toList();
+
+    final categories = categoryProvider.categories
+        .map((c) => ReportCategory.fromJson(c))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
@@ -152,7 +288,15 @@ class _NewReportScreenState extends State<NewReportScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    _buildStepContent(),
+                    _buildStepContent(
+                      buildingNames: buildingNames,
+                      floorNames: floorNames,
+                      areaNames: areaNames,
+                      categories: categories,
+                      isLoading: locationProvider.isLoading,
+                      locationError: locationProvider.error,
+                      onRetry: () => locationProvider.loadBuildings(),
+                    ),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -232,7 +376,15 @@ class _NewReportScreenState extends State<NewReportScreen> {
     );
   }
 
-  Widget _buildStepContent() {
+  Widget _buildStepContent({
+    required List<String> buildingNames,
+    required List<String> floorNames,
+    required List<String> areaNames,
+    required List<ReportCategory> categories,
+    bool isLoading = false,
+    String? locationError,
+    VoidCallback? onRetry,
+  }) {
     switch (_currentStep) {
       case 0:
         return LocationStep(
@@ -241,16 +393,23 @@ class _NewReportScreenState extends State<NewReportScreen> {
           selectedArea: _selectedArea,
           searchController: _locationSearchController,
           detailsController: _locationDetailsController,
-          onBuildingSelected: (v) => setState(() => _selectedBuilding = v),
-          onFloorSelected: (v) => setState(() => _selectedFloor = v),
-          onAreaSelected: (v) => setState(() => _selectedArea = v),
-          onClearArea: () => setState(() => _selectedArea = null),
+          onBuildingSelected: _handleBuildingSelected,
+          onFloorSelected: _handleFloorSelected,
+          onAreaSelected: _handleAreaSelected,
+          onClearArea: _handleClearArea,
           onSearchChanged: () => setState(() {}),
+          buildings: buildingNames,
+          floors: floorNames,
+          areas: areaNames,
+          isLoading: isLoading,
+          errorMessage: locationError,
+          onRetry: onRetry,
         );
       case 1:
         return CategoryStep(
           selectedCategory: _selectedCategory,
           onCategorySelected: (v) => setState(() => _selectedCategory = v),
+          categories: categories,
         );
       case 2:
         return PhotoStep(
@@ -271,8 +430,9 @@ class _NewReportScreenState extends State<NewReportScreen> {
           photoCount: _photos.length,
           duplicateChecked: _duplicateChecked,
           duplicateAction: _duplicateAction,
-          onCheckDuplicates: () => setState(() => _duplicateChecked = true),
+          onCheckDuplicates: _handleCheckDuplicates,
           onDuplicateAction: (v) => setState(() => _duplicateAction = v),
+          duplicateResults: _duplicateResults,
         );
       default:
         return const SizedBox.shrink();

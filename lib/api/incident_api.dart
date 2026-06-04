@@ -33,14 +33,14 @@ class IncidentApi {
     if (search != null) params['title'] = 'ilike.*$search*';
 
     return _client.get(
-      '${ApiConfig.restUrl}/incidents',
+      '${ApiConfig.restUrl}/incidents_with_names',
       queryParams: params,
     );
   }
 
   Future<ApiResponse> getById(String id) async {
     return _client.get(
-      '${ApiConfig.restUrl}/incidents',
+      '${ApiConfig.restUrl}/incidents_with_names',
       queryParams: {'id': 'eq.$id'},
     );
   }
@@ -60,9 +60,10 @@ class IncidentApi {
     );
   }
 
-  Future<ApiResponse> updateStatus(String id, String status, {String? notes, String? assignedTo}) async {
+  Future<ApiResponse> updateStatus(String id, String status, {String? notes, String? assignedTo, String? priorityLabel}) async {
     final data = <String, dynamic>{'status': status};
     if (assignedTo != null) data['assigned_to'] = assignedTo;
+    if (priorityLabel != null) data['priority_label'] = priorityLabel;
     return update(id, data);
   }
 

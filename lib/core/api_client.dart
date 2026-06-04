@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -6,6 +7,7 @@ import 'api_config.dart';
 
 class ApiClient {
   String? _accessToken;
+  static const _timeout = Duration(seconds: 20);
 
   Map<String, String> get _headers {
     final headers = <String, String>{
@@ -22,17 +24,25 @@ class ApiClient {
     _accessToken = token;
   }
 
+  Future<ApiResponse> _fetch(Future<http.Response> Function() call) async {
+    try {
+      final response = await call().timeout(_timeout);
+      return _handleResponse(response);
+    } on TimeoutException {
+      return ApiResponse.error('Permintaan timeout. Coba lagi.');
+    } catch (e) {
+      return ApiResponse.error(_formatError(e));
+    }
+  }
+
   Future<ApiResponse> get(
     String url, {
     Map<String, String>? queryParams,
   }) async {
-    try {
+    return _fetch(() {
       final uri = Uri.parse(url).replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _headers);
-      return _handleResponse(response);
-    } catch (e) {
-      return ApiResponse.error(_formatError(e));
-    }
+      return http.get(uri, headers: _headers);
+    });
   }
 
   Future<ApiResponse> post(
@@ -40,17 +50,14 @@ class ApiClient {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
   }) async {
-    try {
+    return _fetch(() {
       final mergedHeaders = {..._headers, ...?headers};
-      final response = await http.post(
+      return http.post(
         Uri.parse(url),
         headers: mergedHeaders,
         body: body != null ? jsonEncode(body) : null,
       );
-      return _handleResponse(response);
-    } catch (e) {
-      return ApiResponse.error(_formatError(e));
-    }
+    });
   }
 
   Future<ApiResponse> patch(
@@ -58,44 +65,43 @@ class ApiClient {
     Map<String, dynamic>? body,
     Map<String, String>? queryParams,
   }) async {
-    try {
+    return _fetch(() {
       final uri = Uri.parse(url).replace(queryParameters: queryParams);
-      final response = await http.patch(
+      return http.patch(
         uri,
         headers: _headers,
         body: body != null ? jsonEncode(body) : null,
       );
-      return _handleResponse(response);
-    } catch (e) {
-      return ApiResponse.error(_formatError(e));
-    }
+    });
   }
 
   Future<ApiResponse> delete(String url) async {
-    try {
-      final response = await http.delete(Uri.parse(url), headers: _headers);
-      return _handleResponse(response);
-    } catch (e) {
-      return ApiResponse.error(_formatError(e));
-    }
+    return _fetch(() => http.delete(Uri.parse(url), headers: _headers));
   }
 
   Future<ApiResponse> uploadFile(
     String url,
     List<int> bytes, {
     required String mimeType,
+    String method = 'POST',
+    String? fileName,
   }) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse(url));
-      request.headers.addAll(_headers);
+      final request = http.MultipartRequest(method, Uri.parse(url));
+      final headers = Map<String, String>.from(_headers);
+      headers.remove('Content-Type');
+      request.headers.addAll(headers);
       request.files.add(http.MultipartFile.fromBytes(
         'file',
         bytes,
+        filename: fileName,
         contentType: MediaType.parse(mimeType),
       ));
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(_timeout);
       final response = await http.Response.fromStream(streamedResponse);
       return _handleResponse(response);
+    } on TimeoutException {
+      return ApiResponse.error('Permintaan timeout. Coba lagi.');
     } catch (e) {
       return ApiResponse.error(_formatError(e));
     }

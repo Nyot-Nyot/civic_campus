@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'package:civic_campus/data/models/incident.dart';
 import 'package:civic_campus/data/models/notification.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
-import 'package:civic_campus/data/repositories/notification_repository.dart';
+import 'package:civic_campus/data/providers/auth_provider.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
+import 'package:civic_campus/data/providers/notification_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 import 'package:civic_campus/screens/shared/incident/detail/incident_detail_screen.dart';
 
@@ -16,23 +19,30 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final _notificationRepo = NotificationRepository();
-  final _incidentRepo = IncidentRepository();
   List<NotificationItem> _notifications = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadNotifications());
   }
 
+  String? get _userId => context.read<AuthProvider>().userId;
+
   Future<void> _loadNotifications() async {
+    final uid = _userId;
+    if (uid == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
     try {
-      final items = await _notificationRepo.getAll();
+      final provider = context.read<NotificationProvider>();
+      await provider.load(uid);
       if (!mounted) return;
+      final notifMaps = provider.notifications;
       setState(() {
-        _notifications = items;
+        _notifications = notifMaps.map((m) => NotificationItem.fromJson(m)).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -46,8 +56,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Future<void> _onNotificationTap(NotificationItem item) async {
     if (item.incidentId == null) return;
-    final incident = await _incidentRepo.getById(item.incidentId!);
-    if (!mounted || incident == null) return;
+    final incProvider = context.read<IncidentProvider>();
+    await incProvider.loadById(item.incidentId!);
+    if (!mounted) return;
+    final incidentMap = incProvider.selectedIncident;
+    if (incidentMap == null) return;
+    final incident = Incident.fromJson(incidentMap);
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -89,13 +103,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
           actions: [
             if (_unreadCount > 0)
               TextButton(
-                onPressed: () {
-                  _notificationRepo.markAllRead();
-                  setState(() {
-                    for (final n in _notifications) {
-                      n.isUnread = false;
-                    }
-                  });
+                onPressed: () async {
+                  final uid = _userId;
+                  if (uid != null) {
+                    final provider = context.read<NotificationProvider>();
+                    await provider.markAllRead(uid);
+                    if (!mounted) return;
+                    setState(() {
+                      for (final n in _notifications) {
+                        n.isUnread = false;
+                      }
+                    });
+                  }
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Semua notifikasi ditandai dibaca.'),
@@ -187,116 +207,116 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: _notifications.length,
-                      itemBuilder: (context, index) {
-                        final item = _notifications[index];
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            bottom: index < _notifications.length - 1 ? 10 : 0,
-                          ),
-                          child: Card(
-                            margin: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: () => _onNotificationTap(item),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 42,
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                          color: item.iconColor.withValues(
-                                            alpha: 0.12,
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemCount: _notifications.length,
+                          itemBuilder: (context, index) {
+                            final item = _notifications[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: index < _notifications.length - 1 ? 10 : 0,
+                              ),
+                              child: Card(
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () => _onNotificationTap(item),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            width: 42,
+                                            height: 42,
+                                            decoration: BoxDecoration(
+                                              color: item.iconColor.withValues(
+                                                alpha: 0.12,
+                                              ),
+                                              borderRadius: BorderRadius.circular(
+                                                14,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              item.icon,
+                                              color: item.iconColor,
+                                              size: 20,
+                                            ),
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          item.icon,
-                                          color: item.iconColor,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
-                                                if (item.isUnread)
-                                                  Container(
-                                                    width: 8,
-                                                    height: 8,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                      color: Color(0xFF1D4ED8),
-                                                      shape: BoxShape.circle,
+                                                Row(
+                                                  children: [
+                                                    if (item.isUnread)
+                                                      Container(
+                                                        width: 8,
+                                                        height: 8,
+                                                        decoration:
+                                                            const BoxDecoration(
+                                                          color: Color(0xFF1D4ED8),
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                      ),
+                                                    if (item.isUnread)
+                                                      const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        item.title,
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: item.isUnread
+                                                              ? const Color(
+                                                                  0xFF111827)
+                                                              : const Color(
+                                                                  0xFF6B7280),
+                                                        ),
+                                                      ),
                                                     ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  item.body,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Color(0xFF6B7280),
+                                                    height: 1.4,
                                                   ),
-                                                if (item.isUnread)
-                                                  const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    item.title,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: item.isUnread
-                                                          ? const Color(
-                                                              0xFF111827)
-                                                          : const Color(
-                                                              0xFF6B7280),
-                                                    ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  item.timeAgo,
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: Color(0xFF9CA3AF),
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              item.body,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color: Color(0xFF6B7280),
-                                                height: 1.4,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              item.timeAgo,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Color(0xFF9CA3AF),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

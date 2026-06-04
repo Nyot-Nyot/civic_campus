@@ -29,12 +29,17 @@ class LocationProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final response = await _api.getBuildings();
-    if (response.isSuccess && response.data is List) {
-      _buildings = (response.data as List).cast<Map<String, dynamic>>();
-    } else {
-      _error = response.error;
+    try {
+      final response = await _api.getBuildings();
+      if (response.isSuccess && response.data is List) {
+        _buildings = (response.data as List).cast<Map<String, dynamic>>();
+      } else {
+        _error = response.error ?? 'Gagal memuat gedung.';
+      }
+    } catch (e) {
+      _error = 'Terjadi kesalahan: $e';
     }
+
     _isLoading = false;
     notifyListeners();
   }
@@ -45,16 +50,21 @@ class LocationProvider extends ChangeNotifier {
     _selectedArea = null;
     _floors = [];
     _areas = [];
+    _error = null;
     notifyListeners();
 
     _isLoading = true;
     notifyListeners();
 
-    final response = await _api.getFloors(building['id'] as String);
-    if (response.isSuccess && response.data is List) {
-      _floors = (response.data as List).cast<Map<String, dynamic>>();
-    } else {
-      _error = response.error;
+    try {
+      final response = await _api.getFloors(building['id'] as String);
+      if (response.isSuccess && response.data is List) {
+        _floors = (response.data as List).cast<Map<String, dynamic>>();
+      } else {
+        _error = response.error ?? 'Gagal memuat lantai.';
+      }
+    } catch (e) {
+      _error = 'Terjadi kesalahan: $e';
     }
     _isLoading = false;
     notifyListeners();
@@ -64,16 +74,21 @@ class LocationProvider extends ChangeNotifier {
     _selectedFloor = floor;
     _selectedArea = null;
     _areas = [];
+    _error = null;
     notifyListeners();
 
     _isLoading = true;
     notifyListeners();
 
-    final response = await _api.getAreas(floor['id'] as String);
-    if (response.isSuccess && response.data is List) {
-      _areas = (response.data as List).cast<Map<String, dynamic>>();
-    } else {
-      _error = response.error;
+    try {
+      final response = await _api.getAreas(floor['id'] as String);
+      if (response.isSuccess && response.data is List) {
+        _areas = (response.data as List).cast<Map<String, dynamic>>();
+      } else {
+        _error = response.error ?? 'Gagal memuat ruangan.';
+      }
+    } catch (e) {
+      _error = 'Terjadi kesalahan: $e';
     }
     _isLoading = false;
     notifyListeners();

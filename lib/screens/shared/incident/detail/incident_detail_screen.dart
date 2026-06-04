@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
-import 'package:civic_campus/data/dummy_data.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/screens/shared/incident/detail/widgets/assign_staff_sheet.dart';
 import 'package:civic_campus/screens/shared/incident/detail/widgets/incident_detail_body.dart';
 
@@ -23,7 +23,6 @@ class IncidentDetailScreen extends StatefulWidget {
 }
 
 class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
-  final _repo = IncidentRepository();
   late Incident _incident;
   final _bodyKey = GlobalKey<IncidentDetailBodyState>();
 
@@ -34,28 +33,31 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   }
 
   Future<void> _handleStickyAction() async {
+    final provider = context.read<IncidentProvider>();
+
     if (widget.showAdminActions) {
       if (_incident.status == statusOpen || _incident.status == statusAssigned) {
         _showAssignSheet();
         return;
       }
       if (_incident.status == statusResolved) {
-        final ok = await _repo.updateStatus(_incident.id, statusClosed);
+        final err = await provider.updateStatus(_incident.id, statusClosed);
         if (!mounted) return;
-        if (!ok) {
+        if (err != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Laporan tidak ditemukan.')),
+            SnackBar(content: Text(err)),
           );
           return;
         }
+        await provider.loadById(_incident.id);
+        if (!mounted) return;
         setState(() {
-          _incident = allIncidents.firstWhere(
-            (i) => i.id == _incident.id,
-            orElse: () => _incident,
-          );
+          if (provider.selectedIncident != null) {
+            _incident = Incident.fromJson(provider.selectedIncident!);
+          }
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${_incident.id} ditutup.')),
+          SnackBar(content: Text('${_incident.title} ditutup.')),
         );
         return;
       }
@@ -65,24 +67,26 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       _bodyKey.currentState?.showResolveSheet(context);
       return;
     }
-    final ok = await _repo.updateStatus(_incident.id, statusInProgress);
+    final err = await provider.updateStatus(_incident.id, statusInProgress);
     if (!mounted) return;
-    if (!ok) {
+    if (err != null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Laporan tidak ditemukan.')),
+        SnackBar(content: Text(err)),
       );
       return;
     }
+    await provider.loadById(_incident.id);
+    if (!mounted) return;
     setState(() {
-      _incident = allIncidents.firstWhere(
-        (i) => i.id == _incident.id,
-        orElse: () => _incident,
-      );
+      if (provider.selectedIncident != null) {
+        _incident = Incident.fromJson(provider.selectedIncident!);
+      }
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${_incident.id} mulai dikerjakan.',
+          '${_incident.title} mulai dikerjakan.',
         ),
       ),
     );
@@ -109,7 +113,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     bool showSticky;
     String stickyLabel;
     IconData stickyIcon;
-    Color stickyColor = const Color(0xFF111827); // Obsidian black primary color
+    Color stickyColor = const Color(0xFF111827);
 
     if (widget.showAdminActions) {
       showSticky = _incident.status == statusOpen ||

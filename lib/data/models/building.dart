@@ -3,6 +3,10 @@ class Floor {
   final List<String> areas;
   const Floor({required this.name, required this.areas});
 
+  factory Floor.fromJson(Map<String, dynamic> json) {
+    return Floor(name: json['name'] as String, areas: const []);
+  }
+
   Floor copyWith({String? name, List<String>? areas}) {
     return Floor(
       name: name ?? this.name,
@@ -15,6 +19,10 @@ class Building {
   final String name;
   final List<Floor> floors;
   const Building({required this.name, required this.floors});
+
+  factory Building.fromJson(Map<String, dynamic> json) {
+    return Building(name: json['name'] as String, floors: const []);
+  }
 
   Building copyWith({String? name, List<Floor>? floors}) {
     return Building(

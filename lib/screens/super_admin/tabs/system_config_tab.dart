@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:civic_campus/data/models/incident.dart';
-import 'package:civic_campus/data/models/user.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
-import 'package:civic_campus/data/repositories/incident_repository.dart';
-import 'package:civic_campus/data/repositories/user_repository.dart';
+import 'package:civic_campus/data/providers/incident_provider.dart';
+import 'package:civic_campus/data/providers/user_provider.dart';
 import 'package:civic_campus/widgets/state_views.dart';
 
 class SuperAdminSystemConfigTab extends StatefulWidget {
@@ -15,9 +14,6 @@ class SuperAdminSystemConfigTab extends StatefulWidget {
 }
 
 class _SuperAdminSystemConfigTabState extends State<SuperAdminSystemConfigTab> {
-  final _incidentRepo = IncidentRepository();
-  final _userRepo = UserRepository();
-
   int _totalIncidents = 0;
   int _staffCount = 0;
   int _staffTasks = 0;
@@ -27,7 +23,7 @@ class _SuperAdminSystemConfigTabState extends State<SuperAdminSystemConfigTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
@@ -36,16 +32,24 @@ class _SuperAdminSystemConfigTabState extends State<SuperAdminSystemConfigTab> {
       _isLoading = true;
     });
     try {
-      final results = await Future.wait([
-        _incidentRepo.getAll(),
-        _userRepo.getAllUsers(),
+      final incProvider = context.read<IncidentProvider>();
+      final userProvider = context.read<UserProvider>();
+      await Future.wait([
+        incProvider.loadAll(),
+        userProvider.load(),
       ]);
       if (!mounted) return;
-      final incidents = results[0] as List<Incident>;
-      final users = results[1] as List<User>;
-      final staff = users.where((u) => u.role == 'Staff').toList();
-      final staffNames = staff.map((s) => s.name).toSet();
-      final staffTasks = incidents.where((i) => staffNames.contains(i.assignedTo)).length;
+      final incidents = incProvider.incidents;
+      final users = userProvider.users;
+      final staff = users.where((u) => u['role'] == 'Maintenance Staff').toList();
+      final staffNames = staff.map((s) => s['name'] as String).toSet();
+      final staffTasks = incidents
+          .where((i) {
+            final assignedTo = i['assigned_to_name'] as String? ??
+                i['assigned_to'] as String?;
+            return assignedTo != null && staffNames.contains(assignedTo);
+          })
+          .length;
       setState(() {
         _totalIncidents = incidents.length;
         _staffCount = staff.length;
@@ -318,7 +322,7 @@ class _AuditEntry extends StatelessWidget {
             children: [
               Text(action, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF111827))),
               const SizedBox(height: 2),
-              Text('$user • $time', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+              Text('$user \u2022 $time', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
             ],
           ),
         ),

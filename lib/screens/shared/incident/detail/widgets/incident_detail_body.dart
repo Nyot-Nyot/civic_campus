@@ -149,7 +149,7 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Row (Category Icon + Title + Status + ID)
+                      // Header Row (Category Icon + Title + Status)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -176,34 +176,21 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: statusBg,
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: Text(
-                                        IncidentTimeline.statusLabelsIndonesian[_incident.status] ?? _incident.status,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: statusColor,
-                                        ),
-                                      ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text(
+                                    IncidentTimeline.statusLabelsIndonesian[_incident.status] ?? _incident.status,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: statusColor,
                                     ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _incident.id,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF9CA3AF),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -217,7 +204,7 @@ class IncidentDetailBodyState extends State<IncidentDetailBody> {
                       const SizedBox(height: 12),
                       _buildInfoRow(Icons.category_outlined, 'Kategori', _incident.category),
                       const SizedBox(height: 12),
-                      _buildInfoRow(Icons.access_time, 'Waktu', '${_incident.timeAgo} dilaporkan'),
+                      _buildInfoRow(Icons.access_time, 'Waktu', '${formatTimeAgo(_incident.timeAgo)} dilaporkan'),
                       const SizedBox(height: 12),
                       _buildPriorityRow(_incident.priority),
 

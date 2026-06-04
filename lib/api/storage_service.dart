@@ -12,8 +12,8 @@ class StorageService {
     String bucket = 'incident-photos',
     String? mimeType,
   }) async {
-    final url = '${ApiConfig.storageUrl}/object/$bucket/$fileName';
-    return _client.uploadFile(url, bytes, mimeType: mimeType ?? 'image/jpeg');
+    final url = '${ApiConfig.storageUrl}/buckets/$bucket/objects/$fileName';
+    return _client.uploadFile(url, bytes, mimeType: mimeType ?? 'image/jpeg', method: 'PUT', fileName: fileName);
   }
 
   Future<ApiResponse> uploadPhotoWithKey(
@@ -26,10 +26,10 @@ class StorageService {
   }
 
   String getPublicUrl(String key, {String bucket = 'incident-photos'}) {
-    return '${ApiConfig.storageUrl}/object/public/$bucket/$key';
+    return '${ApiConfig.storageUrl}/buckets/$bucket/objects/$key';
   }
 
   Future<ApiResponse> deletePhoto(String key, {String bucket = 'incident-photos'}) async {
-    return _client.delete('${ApiConfig.storageUrl}/object/$bucket/$key');
+    return _client.delete('${ApiConfig.storageUrl}/buckets/$bucket/objects/$key');
   }
 }
