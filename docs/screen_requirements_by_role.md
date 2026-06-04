@@ -111,7 +111,14 @@ Maintenance staff butuh fokus pada daftar tugas, notifikasi assignment, dan upda
 - Note pekerjaan dan checklist kerja.
 - Tombol sticky untuk update status: `Mulai Kerjakan`, `Selesai`, atau `Tambah Catatan`.
 
-### 5.3 Status Update / Completion Screen
+### 5.3 Create Budget Request (RAB) Screen
+- Tombol "Buat RAB" di task detail saat status `Assigned`.
+- Form input item RAB: deskripsi, qty, satuan, harga satuan.
+- Total otomatis kalkulasi.
+- Riwayat RAB versi sebelumnya + status (kalau ada revisi).
+- Saat ditolak admin: tampilkan alasan dan tombol "Revisi RAB".
+
+### 5.4 Status Update / Completion Screen
 - Form sederhana untuk mengubah status ke `In Progress` / `Resolved`.
 - Input catatan kerja.
 - Upload bukti penyelesaian jika diperlukan.
@@ -153,7 +160,14 @@ Admin fokus pada incident handling, assignment, dan ringkasan operasional.
 - Tombol `Assign`, `Reassign`, `Close`, `Reject`.
 - Note: `Request Info` dan `Merge / Split` tidak diimplementasi di MVP (butuh sistem notifikasi & data ops kompleks — Phase 2).
 
-### 6.4 Quick Assignment / Action Panel
+### 6.4 Budget Approval Screen
+- Tab/section baru **"Persetujuan Anggaran"** di dashboard admin.
+- List RAB pending (insiden status `Menunggu Anggaran`) dengan total biaya.
+- Tap item → detail RAB: daftar item, total biaya, catatan teknisi.
+- Tombol **Setujui** (→ `In Progress`) / **Tolak** (wajib isi alasan).
+- Setelah setujui: tombol **Cetak PDF** → dokumen RAB formal siap diajukan ke keuangan kampus.
+
+### 6.5 Quick Assignment / Action Panel
 - Modal atau popover untuk menugaskan staff tanpa pindah halaman.
 - Penugasan manual dengan due date optional.
 - Override priority dan alasan (jika perlu).

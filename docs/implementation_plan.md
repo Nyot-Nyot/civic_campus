@@ -1034,11 +1034,119 @@ npx @insforge/cli deployments deploy .
 
 ---
 
+## Task 11: Budget / RAB System
+
+### 11.1 Migration: `create_budget_requests.sql`
+
+```sql
+create table public.budget_requests (
+  id uuid primary key default gen_random_uuid(),
+  incident_id uuid not null references public.incidents(id) on delete cascade,
+  version integer not null default 1,
+  items jsonb not null default '[]'::jsonb,
+  total_cost numeric not null default 0,
+  notes text,
+  status text not null default 'Menunggu'
+    check (status in ('Menunggu', 'Disetujui', 'Ditolak')),
+  admin_notes text,
+  created_by uuid not null references public.profiles(id),
+  reviewed_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_budget_requests_incident on public.budget_requests(incident_id);
+create index idx_budget_requests_status on public.budget_requests(status);
+```
+
+### 11.2 Migration: `update_incident_status.sql`
+
+Add `Menunggu Anggaran` to incidents status check constraint:
+
+```sql
+alter table public.incidents
+  drop constraint if exists incidents_status_check;
+
+alter table public.incidents
+  add constraint incidents_status_check
+  check (status in ('Open', 'Assigned', 'Menunggu Anggaran', 'In Progress', 'Resolved', 'Closed'));
+```
+
+### 11.3 RLS Policies for `budget_requests`
+
+```sql
+alter table public.budget_requests enable row level security;
+
+create policy "budget_select_staff_own"
+  on public.budget_requests for select
+  using (created_by = auth.uid());
+
+create policy "budget_select_admin"
+  on public.budget_requests for select
+  using (public.has_any_role(array['Facility Admin', 'Super Admin']));
+
+create policy "budget_insert_staff_assigned"
+  on public.budget_requests for insert
+  with check (
+    auth.uid() = created_by
+    and exists (
+      select 1 from public.incidents
+      where id = budget_requests.incident_id
+      and assigned_to = auth.uid()
+      and status = 'Assigned'
+    )
+  );
+
+create policy "budget_update_admin"
+  on public.budget_requests for update
+  using (public.has_any_role(array['Facility Admin', 'Super Admin']));
+```
+
+### 11.4 API Layer
+
+| File | Method | Endpoint |
+|------|--------|----------|
+| `BudgetApi` | `listForIncident(id)` | GET budget_requests?incident_id=eq.{id} |
+| `BudgetApi` | `create(data)` | POST budget_requests |
+| `BudgetApi` | `approve(id, adminNotes)` | PATCH budget_requests?id=eq.{id} → status=Disetujui |
+| `BudgetApi` | `reject(id, adminNotes)` | PATCH budget_requests?id=eq.{id} → status=Ditolak |
+| `BudgetApi` | `getPending()` | GET budget_requests?status=eq.Menunggu |
+
+### 11.5 Flutter Screens
+
+- **Staff Task Detail**: Add "Buat RAB" button (visible when status = Assigned, user is assigned staff).
+- **Create Budget Request Screen**: Form with dynamic item list (description, qty, unit, unit_cost). Auto-calculate total. Show previous versions and rejection reason.
+- **Admin Budget Approval Tab**: List pending RABs with total cost. Tap → detail → Approve/Reject + PDF generate.
+- **Admin Incident Detail**: Show RAB status and link to approval screen.
+
+### 11.6 PDF Generation
+
+Generate RAB PDF document using a package like `pdf` (Dart):
+
+- Formal document header: RENCANA ANGGARAN BIAYA
+- Auto-generated document number
+- Incident info: title, location, category, technician
+- Item table with costs
+- Total sum
+- Signature fields for technician and facility admin
+- Admin can download/share the PDF for campus finance submission
+
+### 11.7 Priority Order
+
+```
+[Now] Task 11.1 – DB migration + RLS
+[Now] Task 11.2 – BudgetApi + Provider
+[Now] Task 11.3 – Staff: Create RAB screen
+[Now] Task 11.4 – Admin: Approval screen + PDF
+```
+
+---
+
 ## Prioritas Rekomendasi Pengerjaan
 
 ```
 [Urgent] Task 1 → Task 2 → Task 3 → Task 4 → Task 6 → Task 7
-[Secondary] Task 5 → Task 8 → Task 10
+[Secondary] Task 5 → Task 8 → Task 10 → Task 11
 [Nice to have] Task 9
 ```
 

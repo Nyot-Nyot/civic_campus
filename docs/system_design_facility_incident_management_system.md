@@ -125,7 +125,13 @@ Assignment menyimpan:
 - status,
 - notes.
 
-## 2.9 Audit Log
+## 2.9 Budget Request
+
+Budget request adalah pengajuan RAB (Rencana Anggaran Biaya) yang dibuat oleh teknisi sebelum memperbaiki insiden.
+
+Satu insiden bisa memiliki banyak versi budget request (revisi jika ditolak).
+
+## 2.10 Audit Log
 
 Audit log menyimpan action penting secara append-only.
 
@@ -142,6 +148,9 @@ Open
 Assigned
   |
   v
+Menunggu Anggaran (NEW)
+  |
+  v
 In Progress
   |
   v
@@ -154,7 +163,8 @@ Closed
 Alternative flows:
 
 ```text
-Open/Assigned/In Progress -> Rejected
+Menunggu Anggaran -> Assigned (RAB ditolak, revisi)
+Open/Assigned/Menunggu Anggaran/In Progress -> Rejected
 Closed/Resolved -> Reopen Requested -> Open
 Any Active State -> Waiting Parts flag
 ```
@@ -165,6 +175,7 @@ Any Active State -> Waiting Parts flag
 |---|---|---|
 | Open | Incident baru, belum ditugaskan | Admin |
 | Assigned | Sudah ada staff bertanggung jawab | Admin |
+| **Menunggu Anggaran** | **Staff sudah kirim RAB, menunggu persetujuan admin** | **Admin** |
 | In Progress | Staff sedang menangani | Staff |
 | Resolved | Staff menandai selesai dengan bukti | Staff |
 | Closed | Admin menyetujui penyelesaian | Admin |
@@ -440,9 +451,115 @@ Tujuannya agar admin tidak membuka terlalu banyak halaman untuk keputusan sederh
 
 ---
 
-## 8. Notification System
+## 8. Budget / RAB System
 
-## 8.1 Notification Events
+## 8.1 Design Principle
+
+Aplikasi tidak menyentuh uang. Budget Request hanya membuat dokumen RAB (Rencana Anggaran Biaya) yang formal dan terstruktur untuk diajukan ke bagian keuangan kampus. Pencairan dana tetap melalui birokrasi kampus yang sudah ada (SPJ, aturan pengadaan, verifikasi keuangan).
+
+## 8.2 Budget Request Flow
+
+```text
+Assigned Incident
+      |
+      v
+Staff creates RAB (dalam aplikasi)
+      |
+      v
+Status -> Menunggu Anggaran
+      |
+      +----------------------------------+
+      |                                  |
+      v                                  v
+Admin Setujui                      Admin Tolak (dengan alasan)
+      |                                  |
+      v                                  v
+Status -> In Progress               Status -> Assigned (revisi RAB)
+Staff mulai perbaiki                Staff buat RAB versi baru
+```
+
+## 8.3 Database Table: `budget_requests`
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `id` | UUID PK | |
+| `incident_id` | FK → incidents | |
+| `version` | integer | Urutan revisi (1, 2, 3…) |
+| `items` | JSONB | `[{description, qty, unit, unit_cost}]` |
+| `total_cost` | numeric | Jumlah total biaya |
+| `notes` | text | Catatan teknisi |
+| `status` | text | `Menunggu`, `Disetujui`, `Ditolak` |
+| `admin_notes` | text | Alasan setuju/tolak |
+| `created_by` | FK → profiles | Teknisi yang membuat |
+| `reviewed_by` | FK → profiles | Admin yang mereview |
+| `created_at` | timestamptz | |
+| `updated_at` | timestamptz | |
+
+Satu insiden bisa memiliki banyak `budget_requests` (riwayat revisi). Status teknis insiden (`Menunggu Anggaran`) mengacu pada budget request version terbaru yang berstatus `Menunggu`.
+
+## 8.4 Items JSONB Structure
+
+Setiap item dalam array `items`:
+
+```json
+{
+  "description": "Ganti kabel listrik 2.5mm",
+  "qty": 10,
+  "unit": "meter",
+  "unit_cost": 25000
+}
+```
+
+Unit: `meter`, `buah`, `paket`, `liter`, `unit`, `set`.
+
+## 8.5 RAB PDF Generation
+
+Setelah admin menyetujui, aplikasi bisa generate dokumen PDF RAB formal:
+
+```
+KOP: RENCANA ANGGARAN BIAYA
+Nomor: RAB/2026/VI/001
+Insiden: [judul]
+Lokasi: [gedung] [lantai] [ruang]
+Kategori: [kategori]
+Teknisi: [nama teknisi]
+
+No | Deskripsi | Qty | Satuan | Harga Satuan | Total
+---|-----------|-----|--------|-------------|------
+1  | ...       | ... | ...    | Rp ...      | Rp ...
+
+Total: Rp X.XXX.XXX
+
+Mengetahui,                 Menyetujui,
+Teknisi                     Facility Admin
+
+[ttd]                       [ttd]
+[nama]                      [nama]
+```
+
+Admin cukup **Cetak PDF → print → lampirkan** ke pengajuan keuangan kampus.
+
+## 8.6 Transition Rules
+
+- Staff hanya bisa membuat RAB untuk insiden yang diassign ke dirinya.
+- Staff hanya bisa membuat RAB saat status insiden `Assigned`.
+- Saat RAB dikirim (status `Menunggu`), insiden otomatis pindah ke `Menunggu Anggaran`.
+- Admin bisa **Setujui** (→ `In Progress`) atau **Tolak** (→ `Assigned`, staff buat versi baru).
+- Staff bisa merevisi RAB dengan membuat `budget_requests` version baru.
+- Aplikasi tidak menangani pencairan dana — hanya generate dokumen RAB.
+
+## 8.7 Abuse Prevention
+
+- Riwayat semua versi RAB tersimpan (audit trail).
+- Admin harus memberi alasan jika menolak RAB.
+- Tidak ada batas revisi (transparan), tetapi riwayat panjang terlihat oleh admin.
+- Aplikasi tidak pernah menyentuh uang atau rekening.
+
+---
+
+## 9. Notification System
+
+## 9.1 Notification Events
 
 | Event | Recipient |
 |---|---|
@@ -453,7 +570,7 @@ Tujuannya agar admin tidak membuka terlalu banyak halaman untuk keputusan sederh
 | Incident closed | Reporter and followers |
 | Reopen requested | Admin |
 
-## 8.2 Notification Storage
+## 9.2 Notification Storage
 
 Table `notifications`:
 
@@ -467,7 +584,7 @@ Table `notifications`:
 - read_at,
 - created_at.
 
-## 8.3 Push Strategy
+## 9.3 Push Strategy
 
 MVP wajib in-app notification.
 
@@ -479,9 +596,9 @@ FCM optional:
 
 ---
 
-## 9. Reopen System
+## 10. Reopen System
 
-## 9.1 Reopen Conditions
+## 10.1 Reopen Conditions
 
 User dapat request reopen jika:
 
@@ -489,7 +606,7 @@ User dapat request reopen jika:
 - masalah muncul lagi,
 - perbaikan tidak efektif.
 
-## 9.2 Reopen Flow MVP
+## 10.2 Reopen Flow MVP
 
 ```text
 Closed/Resolved Incident
@@ -505,7 +622,7 @@ Admin accepts -> status Open
 Admin rejects -> keep Closed with reason
 ```
 
-## 9.3 Safeguards
+## 10.3 Safeguards
 
 - reopen request harus ditinjau oleh Admin (tidak berganti status langsung ke Open secara otomatis).
 - reopen reason wajib.
@@ -515,9 +632,9 @@ Admin rejects -> keep Closed with reason
 
 ---
 
-## 10. Audit System
+## 11. Audit System
 
-## 10.1 Logged Events
+## 11.1 Logged Events
 
 - user login optional,
 - report created,
@@ -532,7 +649,7 @@ Admin rejects -> keep Closed with reason
 - reopen requested,
 - rejected.
 
-## 10.2 Audit Fields
+## 11.2 Audit Fields
 
 - id,
 - actor_id,
@@ -544,15 +661,15 @@ Admin rejects -> keep Closed with reason
 - metadata,
 - created_at.
 
-## 10.3 Rule
+## 11.3 Rule
 
 Audit log tidak diedit dan tidak dihapus lewat aplikasi.
 
 ---
 
-## 11. Analytics Design
+## 12. Analytics Design
 
-## 11.1 MVP Analytics
+## 12.1 MVP Analytics
 
 Analytics harus membantu keputusan admin, bukan sekadar grafik cantik.
 
@@ -567,7 +684,7 @@ Metrics:
 - overdue incidents,
 - staff active workload.
 
-## 11.2 Query Strategy
+## 12.2 Query Strategy
 
 Untuk MVP:
 
@@ -583,13 +700,13 @@ Phase 2:
 
 ---
 
-## 12. Concurrency Handling
+## 13. Concurrency Handling
 
-## 12.1 Problem
+## 13.1 Problem
 
 Dua user bisa melaporkan masalah yang sama dalam waktu berdekatan.
 
-## 12.2 MVP Solution
+## 13.2 MVP Solution
 
 Saat submit:
 
@@ -600,7 +717,7 @@ Saat submit:
 5. atau buat incident baru,
 6. commit.
 
-## 12.3 Database Constraint
+## 13.3 Database Constraint
 
 Gunakan constraint untuk:
 
@@ -611,7 +728,7 @@ Gunakan constraint untuk:
 
 ---
 
-## 13. Search and Filtering
+## 14. Search and Filtering
 
 MVP search:
 
@@ -632,9 +749,9 @@ Admin filters:
 
 ---
 
-## 14. Security Design
+## 15. Security Design
 
-## 14.1 RBAC Rules
+## 15.1 RBAC Rules
 
 Backend/database wajib mengecek role.
 
@@ -645,7 +762,7 @@ Contoh:
 - Admin dapat assign, close, dan manage operational master data (locations, categories).
 - Super Admin dapat manage users dan system configuration (RBAC, SLA defaults).
 
-## 14.2 File Validation
+## 15.2 File Validation
 
 Upload harus membatasi:
 
@@ -654,7 +771,7 @@ Upload harus membatasi:
 - extension,
 - generated filename.
 
-## 14.3 Abuse Prevention
+## 15.3 Abuse Prevention
 
 - report cooldown,
 - confirmation uniqueness,
@@ -664,13 +781,13 @@ Upload harus membatasi:
 
 ---
 
-## 15. Data Retention
+## 16. Data Retention
 
-## 15.1 Historical Preservation
+## 16.1 Historical Preservation
 
 Report, incident, assignment, dan audit log tidak hard-delete pada penggunaan normal.
 
-## 15.2 Soft Delete
+## 16.2 Soft Delete
 
 Gunakan:
 
@@ -682,9 +799,9 @@ Master data seperti location/category boleh di-nonaktifkan agar tidak merusak da
 
 ---
 
-## 16. Failure Handling
+## 17. Failure Handling
 
-## 16.1 Upload Failure
+## 17.1 Upload Failure
 
 Jika upload foto gagal:
 
@@ -692,20 +809,20 @@ Jika upload foto gagal:
 - user diberi retry,
 - draft tetap tersimpan lokal.
 
-## 16.2 Notification Failure
+## 17.2 Notification Failure
 
 Jika FCM gagal:
 
 - in-app notification tetap tersimpan,
 - status operasional tidak gagal hanya karena push gagal.
 
-## 16.3 Partial Submit Failure
+## 17.3 Partial Submit Failure
 
 Gunakan transaksi agar report dan incident link tidak setengah jadi.
 
 ---
 
-## 17. Suggested Database Tables
+## 18. Suggested Database Tables
 
 Minimum schema:
 
@@ -723,6 +840,7 @@ status_history
 maintenance_notes
 notifications
 reopen_requests
+budget_requests (NEW)
 audit_logs
 ```
 
@@ -736,7 +854,7 @@ priority_overrides
 
 ---
 
-## 18. Future System Evolution
+## 19. Future System Evolution
 
 Phase 2:
 
@@ -744,7 +862,8 @@ Phase 2:
 - manual merge/split,
 - SLA configuration,
 - FCM push,
-- CSV/PDF export.
+- CSV/PDF export,
+- **Budget/RAB system (implemented — see Section 8).**
 
 Phase 3:
 
@@ -761,7 +880,7 @@ Phase 4:
 
 ---
 
-## 19. Final System Design Principles
+## 20. Final System Design Principles
 
 Sistem ini sengaja dibuat sederhana di infrastruktur, tetapi tetap serius di domain model.
 
