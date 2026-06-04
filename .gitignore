@@ -15,6 +15,11 @@
 */.flutter-plugins-dependencies
 **/pubspec.lock
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
 # InsForge & AI agent skills
 .insforge
 .agent
