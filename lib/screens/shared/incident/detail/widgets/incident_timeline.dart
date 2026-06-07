@@ -17,6 +17,7 @@ class IncidentTimeline extends StatelessWidget {
   static const Map<String, String> statusLabelsIndonesian = {
     'Open': 'Menunggu Penanganan',
     'Assigned': 'Sudah Ditugaskan',
+    'Menunggu Anggaran': 'Menunggu Anggaran',
     'In Progress': 'Sedang Dikerjakan',
     'Resolved': 'Selesai Dikerjakan',
     'Closed': 'Ditutup',

@@ -29,10 +29,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<IncidentProvider>().loadAll();
-      final auth = context.read<AuthProvider>();
-      if (auth.userId != null) {
-        context.read<NotificationProvider>().load(auth.userId!);
+      final userId = context.read<AuthProvider>().userId;
+      context.read<IncidentProvider>().loadAll(reporterId: userId);
+      if (userId != null) {
+        context.read<NotificationProvider>().load(userId);
       }
     });
   }
@@ -87,7 +87,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           isLoading: incidentProvider.isLoading,
           activeIncidents: _activeIncidents,
           unreadNotificationCount: notificationProvider.unreadCount,
-          onRefresh: () => incidentProvider.loadAll(),
+          onRefresh: () => incidentProvider.loadAll(
+            reporterId: context.read<AuthProvider>().userId,
+          ),
           onNewReport: ({initialCategory}) {
             Navigator.of(context).push(
               MaterialPageRoute(

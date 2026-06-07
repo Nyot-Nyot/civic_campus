@@ -23,14 +23,27 @@ class AuthProvider extends ChangeNotifier {
   String? get userId => _authService.userId;
   String? get accessToken => _authService.session?.accessToken;
 
+  bool get needsEmailVerification => _authService.needsEmailVerification;
+  bool get signUpSucceeded => _authService.signUpSucceeded;
+
   Future<String?> signIn(String email, String password) {
     return _authService.signIn(email: email, password: password);
+  }
+
+  Future<String?> verifyEmail(String email, String otp) {
+    return _authService.verifyEmail(email, otp);
+  }
+
+  Future<String?> resendVerificationEmail(String email) {
+    return _authService.resendVerificationEmail(email);
   }
 
   Future<String?> signUp(String email, String password, {String? name}) {
     return _authService.signUp(email: email, password: password, name: name);
   }
 
+  /// Returns `null` on success. Returns `'VERIFICATION_REQUIRED'` when
+  /// sign-up succeeded but email verification is required (no session created).
   Future<String?> signUpWithProfile({
     required String email,
     required String password,
@@ -40,7 +53,7 @@ class AuthProvider extends ChangeNotifier {
     if (error != null) return error;
 
     final uid = _authService.userId;
-    if (uid == null) return 'Gagal mendapatkan ID pengguna';
+    if (uid == null) return 'VERIFICATION_REQUIRED';
 
     final profileResponse = await _userApi.create({
       'id': uid,

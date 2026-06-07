@@ -138,25 +138,21 @@ void main() {
       expect(find.text('Simulasi error dari server'), findsOneWidget);
     });
 
-    testWidgets('shows API error when staff Mulai Kerjakan fails', (tester) async {
+    testWidgets('shows Buat RAB button for assigned incident (staff)', (tester) async {
       await tester.pumpWidget(
         buildDetailScreen(
           incident: assignedIncident,
           showStaffActions: true,
-          failUpdate: true,
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Mulai Kerjakan'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Simulasi error dari server'), findsOneWidget);
+      expect(find.text('Buat RAB'), findsOneWidget);
     });
   });
 
   group('Staff sticky buttons', () {
-    testWidgets('Assigned incident shows Mulai Kerjakan for staff', (tester) async {
+    testWidgets('Assigned incident shows Buat RAB for staff', (tester) async {
       await tester.pumpWidget(
         buildDetailScreen(
           incident: assignedIncident,
@@ -165,7 +161,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Mulai Kerjakan'), findsOneWidget);
+      expect(find.text('Buat RAB'), findsOneWidget);
     });
   });
 }

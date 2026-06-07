@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:civic_campus/data/models/incident.dart';
 import 'package:civic_campus/data/constants/app_constants.dart';
+import 'package:civic_campus/data/providers/auth_provider.dart';
 import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/widgets/incident_card.dart';
 import 'package:civic_campus/widgets/state_views.dart';
@@ -32,7 +33,8 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<IncidentProvider>().loadAll();
+      final userId = context.read<AuthProvider>().userId;
+      context.read<IncidentProvider>().loadAll(reporterId: userId);
     });
   }
 
@@ -63,7 +65,8 @@ class _MyIncidentsBodyState extends State<_MyIncidentsBody> {
   }
 
   Future<void> _refresh() async {
-    await context.read<IncidentProvider>().loadAll();
+    final userId = context.read<AuthProvider>().userId;
+    await context.read<IncidentProvider>().loadAll(reporterId: userId);
   }
 
   @override

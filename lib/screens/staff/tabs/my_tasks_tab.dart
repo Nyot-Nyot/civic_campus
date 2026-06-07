@@ -9,8 +9,9 @@ import 'package:civic_campus/screens/shared/incident/detail/incident_detail_scre
 
 class StaffMyTasksTab extends StatefulWidget {
   final String staffName;
+  final String userId;
 
-  const StaffMyTasksTab({super.key, required this.staffName});
+  const StaffMyTasksTab({super.key, required this.staffName, required this.userId});
 
   @override
   State<StaffMyTasksTab> createState() => _StaffMyTasksTabState();
@@ -22,7 +23,7 @@ class _StaffMyTasksTabState extends State<StaffMyTasksTab> {
   bool _hasError = false;
   String _activeFilter = 'Semua';
 
-  final _filters = ['Semua', statusOpen, statusAssigned, statusInProgress, statusResolved];
+  final _filters = ['Semua', statusOpen, statusAssigned, statusPendingBudget, statusInProgress, statusResolved];
 
   List<Incident> get _filteredTasks {
     final sorted = List<Incident>.from(_tasks)
@@ -47,17 +48,12 @@ class _StaffMyTasksTabState extends State<StaffMyTasksTab> {
     });
     try {
       final provider = context.read<IncidentProvider>();
-      await provider.loadAll();
-      if (!mounted) return;
-      final allIncidents = provider.incidents;
-      final assigned = allIncidents.where((i) {
-        final assignedTo = i['assigned_to_name'] as String? ??
-            i['assigned_to'] as String?;
-        return assignedTo == widget.staffName;
-      }).toList();
+      await provider.loadAll(assignedTo: widget.userId);
       if (!mounted) return;
       setState(() {
-        _tasks = assigned.map((m) => Incident.fromJson(m)).toList();
+        _tasks = provider.incidents
+            .map((m) => Incident.fromJson(m))
+            .toList();
         _isLoading = false;
       });
     } catch (e) {

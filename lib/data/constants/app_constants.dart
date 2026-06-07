@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 const statusColors = <String, Color>{
   'Open': Color(0xFF1D4ED8),
   'Assigned': Color(0xFF374151),
+  'Menunggu Anggaran': Color(0xFFB45309),
   'In Progress': Color(0xFFC2410C),
   'Resolved': Color(0xFF047857),
   'Closed': Color(0xFF6B7280),
@@ -18,11 +19,13 @@ const statusBgColors = <String, Color>{
   'In Progress': Color(0xFFFFEDD5),
   'Resolved': Color(0xFFD1FAE5),
   'Closed': Color(0xFFF3F4F6),
+  'Menunggu Anggaran': Color(0xFFFFFBEB),
 };
 
 const statusFlow = [
   'Open',
   'Assigned',
+  'Menunggu Anggaran',
   'In Progress',
   'Resolved',
   'Closed',

@@ -20,7 +20,7 @@ class ReportApi {
         'location_details': locationDetails ?? '',
         'category_id': categoryId,
         'description': description ?? '',
-        if (existingIncidentId != null) 'existing_incident_id': existingIncidentId,
+        'existing_incident_id': ?existingIncidentId,
       },
     );
   }
@@ -45,7 +45,7 @@ class ReportApi {
       '${ApiConfig.restUrl}/confirmations',
       body: {
         'incident_id': incidentId,
-        if (comment != null) 'comment': comment,
+        'comment': ?comment,
       },
     );
   }

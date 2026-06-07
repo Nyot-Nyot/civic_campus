@@ -45,6 +45,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (!mounted) return;
 
+      if (!mounted) return;
+
+      if (error == 'VERIFICATION_REQUIRED' || auth.needsEmailVerification) {
+        Navigator.of(context).pushReplacementNamed(
+          '/verify-email',
+          arguments: _emailController.text.trim(),
+        );
+        return;
+      }
+
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -55,8 +65,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         setState(() => _isLoading = false);
         return;
       }
-
-      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Akun berhasil dibuat!')),

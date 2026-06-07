@@ -68,11 +68,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   ];
 
   Widget _buildBody(BuildContext context) {
-    final profile = context.read<AuthProvider>().profile;
+    final auth = context.read<AuthProvider>();
+    final profile = auth.profile;
     final staffName = profile?['name'] as String? ?? 'Staff';
+    final staffUserId = auth.userId ?? '';
     switch (_selectedIndex) {
       case 0:
-        return StaffMyTasksTab(staffName: staffName);
+        return StaffMyTasksTab(staffName: staffName, userId: staffUserId);
       case 1:
         return const NotificationScreen(showStaffActions: true);
       case 2:

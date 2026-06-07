@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 const statusOpen = 'Open';
 const statusAssigned = 'Assigned';
+const statusPendingBudget = 'Menunggu Anggaran';
 const statusInProgress = 'In Progress';
 const statusResolved = 'Resolved';
 const statusClosed = 'Closed';

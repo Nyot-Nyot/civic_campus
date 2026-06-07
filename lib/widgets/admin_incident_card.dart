@@ -18,6 +18,7 @@ class AdminIncidentCard extends StatelessWidget {
   static const _statusLabels = {
     statusOpen: 'Menunggu Penanganan',
     statusAssigned: 'Sudah Ditugaskan',
+    statusPendingBudget: 'Menunggu Anggaran',
     statusInProgress: 'Sedang Dikerjakan',
     statusResolved: 'Selesai Dikerjakan',
     statusClosed: 'Ditutup',

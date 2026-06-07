@@ -40,6 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (error != null) {
+        if (auth.needsEmailVerification) {
+          Navigator.of(context).pushReplacementNamed(
+            '/verify-email',
+            arguments: _emailController.text.trim(),
+          );
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error),
@@ -233,5 +240,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
 }

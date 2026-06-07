@@ -4,6 +4,7 @@ import 'package:civic_campus/screens/auth/login_screen.dart';
 import 'package:civic_campus/widgets/app_bottom_nav.dart';
 import 'package:civic_campus/widgets/logout_sheet.dart';
 import 'package:civic_campus/screens/admin/tabs/overview_tab.dart';
+import 'package:civic_campus/screens/admin/tabs/budget_approval_tab.dart';
 import 'package:civic_campus/screens/shared/incident/incident_list_tab.dart';
 import 'package:civic_campus/screens/admin/tabs/staff_workload_tab.dart';
 import 'package:civic_campus/screens/admin/tabs/master_data_tab.dart';
@@ -25,6 +26,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   static const _navItems = [
     AppBottomNavItem(icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Overview'),
     AppBottomNavItem(icon: Icons.list_alt_outlined, selectedIcon: Icons.list_alt, label: 'Daftar Insiden'),
+    AppBottomNavItem(icon: Icons.request_quote_outlined, selectedIcon: Icons.request_quote, label: 'Anggaran'),
     AppBottomNavItem(icon: Icons.bar_chart_outlined, selectedIcon: Icons.bar_chart, label: 'Beban Kerja Staff'),
     AppBottomNavItem(icon: Icons.business_outlined, selectedIcon: Icons.business, label: 'Master Data'),
   ];
@@ -88,8 +90,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         initialStatusFilter: _incidentStatusFilter,
         initialPriorityFilter: _incidentPriorityFilter,
       );
-      case 2: return const AdminStaffWorkloadTab();
-      case 3: return const AdminMasterDataTab();
+      case 2: return const AdminBudgetApprovalTab();
+      case 3: return const AdminStaffWorkloadTab();
+      case 4: return const AdminMasterDataTab();
       default: return const SizedBox.shrink();
     }
   }

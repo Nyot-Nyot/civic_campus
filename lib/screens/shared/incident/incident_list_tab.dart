@@ -36,7 +36,7 @@ class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
   String _staffFilter = 'Semua';
 
   final _filters = [
-    'Semua', statusOpen, statusAssigned, statusInProgress, statusResolved, statusClosed,
+    'Semua', statusOpen, statusAssigned, statusPendingBudget, statusInProgress, statusResolved, statusClosed,
   ];
 
   static const _priorityFilters = ['Semua', 'Tinggi', 'Sedang', 'Rendah'];
@@ -45,6 +45,7 @@ class _SharedIncidentListTabState extends State<SharedIncidentListTab> {
     'Semua': 'Semua',
     statusOpen: 'Menunggu Penanganan',
     statusAssigned: 'Sudah Ditugaskan',
+    statusPendingBudget: 'Menunggu Anggaran',
     statusInProgress: 'Sedang Dikerjakan',
     statusResolved: 'Selesai Dikerjakan',
     statusClosed: 'Ditutup',

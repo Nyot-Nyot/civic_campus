@@ -1,14 +1,15 @@
 import 'package:civic_campus/api/api.dart';
+import 'package:civic_campus/app.dart';
 import 'package:civic_campus/core/api_client.dart';
 import 'package:civic_campus/core/auth_service.dart';
 import 'package:civic_campus/data/providers/auth_provider.dart';
+import 'package:civic_campus/data/providers/budget_provider.dart';
 import 'package:civic_campus/data/providers/category_provider.dart';
 import 'package:civic_campus/data/providers/incident_provider.dart';
 import 'package:civic_campus/data/providers/location_provider.dart';
 import 'package:civic_campus/data/providers/notification_provider.dart';
 import 'package:civic_campus/data/providers/report_provider.dart';
 import 'package:civic_campus/data/providers/user_provider.dart';
-import 'package:civic_campus/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -28,13 +29,16 @@ void main() async {
   final userApi = UserApi(apiClient);
   final notificationApi = NotificationApi(apiClient);
   final storageService = StorageService(apiClient);
+  final budgetApi = BudgetApi(apiClient);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(authService: authService, userApi: userApi),
+          create: (_) =>
+              AuthProvider(authService: authService, userApi: userApi),
         ),
+        Provider<IncidentApi>.value(value: incidentApi),
         ChangeNotifierProvider<IncidentProvider>(
           create: (_) => IncidentProvider(incidentApi),
         ),
@@ -51,7 +55,11 @@ void main() async {
           create: (_) => NotificationProvider(notificationApi),
         ),
         ChangeNotifierProvider<ReportProvider>(
-          create: (_) => ReportProvider(reportApi: reportApi, storage: storageService),
+          create: (_) =>
+              ReportProvider(reportApi: reportApi, storage: storageService),
+        ),
+        ChangeNotifierProvider<BudgetProvider>(
+          create: (_) => BudgetProvider(api: budgetApi),
         ),
       ],
       child: const CivicCampusApp(),

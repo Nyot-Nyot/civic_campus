@@ -72,16 +72,11 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   Future<void> _loadStats() async {
     final incProvider = context.read<IncidentProvider>();
-    await incProvider.loadAll();
-    if (!mounted) return;
-    final items = incProvider.incidents;
+    final auth = context.read<AuthProvider>();
     if (_isStaff) {
-      final tasks = items.where((i) {
-        final assignedTo = i['assigned_to_name'] as String? ??
-            i['assigned_to'] as String?;
-        return assignedTo == _user.name;
-      }).toList();
+      await incProvider.loadAll(assignedTo: auth.userId);
       if (!mounted) return;
+      final tasks = incProvider.incidents;
       setState(() {
         _totalIncidents = tasks.length;
         _inProgressTasks = tasks.where((t) => t['status'] == 'In Progress').length;
@@ -95,6 +90,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
         _isLoadingStats = false;
       });
     } else {
+      await incProvider.loadAll();
+      final items = incProvider.incidents;
       final activeCount = items.where((i) {
         final status = i['status'] as String? ?? '';
         return status != 'Resolved' && status != 'Closed';

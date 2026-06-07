@@ -19,7 +19,7 @@ class IncidentProvider extends ChangeNotifier {
   String? get error => _error;
   String get statusFilter => _statusFilter;
 
-  Future<void> loadAll() async {
+  Future<void> loadAll({String? reporterId, String? assignedTo}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -27,6 +27,8 @@ class IncidentProvider extends ChangeNotifier {
     final response = await _api.list(
       status: _statusFilter.isEmpty ? null : _statusFilter,
       search: _searchQuery.isEmpty ? null : _searchQuery,
+      reporterId: reporterId,
+      assignedTo: assignedTo,
     );
     if (response.isSuccess && response.data is List) {
       _incidents = (response.data as List).cast<Map<String, dynamic>>();

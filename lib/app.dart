@@ -5,6 +5,7 @@ import 'package:civic_campus/screens/admin/admin_home_screen.dart';
 import 'package:civic_campus/screens/auth/login_screen.dart';
 import 'package:civic_campus/screens/auth/sign_up_screen.dart';
 import 'package:civic_campus/screens/auth/splash_screen.dart';
+import 'package:civic_campus/screens/auth/verify_email_screen.dart';
 import 'package:civic_campus/screens/staff/staff_home_screen.dart';
 import 'package:civic_campus/screens/student/student_home_screen.dart';
 import 'package:civic_campus/screens/super_admin/super_admin_home_screen.dart';
@@ -29,6 +30,16 @@ class CivicCampusApp extends StatelessWidget {
         StaffHomeScreen.routeName: (context) => const StaffHomeScreen(),
         AdminHomeScreen.routeName: (context) => const AdminHomeScreen(),
         SuperAdminHomeScreen.routeName: (context) => const SuperAdminHomeScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == VerifyEmailScreen.routeName) {
+          final email = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (_) => VerifyEmailScreen(email: email),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }
